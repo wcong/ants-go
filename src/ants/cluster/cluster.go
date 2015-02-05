@@ -14,6 +14,9 @@ func NewCluster(name string) *Cluster {
 	return &Cluster{name, make([]*Node, 0), nil}
 }
 
+func (this *Cluster) SetName(name string) {
+	this.name = name
+}
 func (this *Cluster) GetName() string {
 	return this.name
 }
@@ -22,6 +25,9 @@ func (this *Cluster) GetNodeList() []*Node {
 }
 
 func (this *Cluster) AddNode(node *Node) {
+	if this.nodeList == nil {
+		this.nodeList = make([]*Node, 3)
+	}
 	this.nodeList[len(this.nodeList)] = node
 }
 
