@@ -1,7 +1,7 @@
 package main
 
 import (
-	. "ants/settings"
+	. "ants/conf"
 	"flag"
 )
 
