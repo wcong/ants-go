@@ -1,0 +1,5 @@
+package bootstracp
+
+import (
+	"flag"
+)
