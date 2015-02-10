@@ -4,11 +4,12 @@ import (
 	. "ants/conf"
 	"ants/node"
 	"flag"
+	"log"
 	"os"
 )
 
 const (
-	CONF_FILE = "/../../../conf/conf.json"
+	CONF_FILE = "/../conf/conf.json"
 )
 
 func initFlag(settings *Settings) {
@@ -23,8 +24,10 @@ func MakeSettings() *Settings {
 	return settings
 }
 func main() {
+	log.Println("let us go shipping")
 	setting := MakeSettings()
 	Node := node.NewNode(setting)
 	Node.Init()
+	log.Println("finish init")
 	Node.Start()
 }

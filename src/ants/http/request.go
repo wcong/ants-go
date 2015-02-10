@@ -7,7 +7,7 @@ import (
 )
 
 type Request struct {
-	Http.Request
+	GoRequest *Http.Request
 }
 
 func NewRequest(method, url string, body io.Reader) (*Request, error) {
@@ -15,7 +15,7 @@ func NewRequest(method, url string, body io.Reader) (*Request, error) {
 	if err != nil {
 		return nil, err
 	}
-	request := Request{*httpRequest}
+	request := Request{httpRequest}
 	return &request, err
 }
 

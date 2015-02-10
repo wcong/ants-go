@@ -2,10 +2,18 @@ package crawler
 
 import (
 	"ants/http"
-	"fmt"
+	"log"
+	Http "net/http"
 )
 
-func Download(resuqest http.Request) *http.Response {
-	fmt.Println("download")
-	return nil
+func Download(request *http.Request) *http.Response {
+	log.Println("download url:" + request.GoRequest.URL.String())
+	client := Http.Client{}
+	response, err := client.Do(request.GoRequest)
+	if err != nil {
+		log.Fatal(err)
+	}
+	Response := http.Response{}
+	Response.GoResponse = response
+	return &Response
 }

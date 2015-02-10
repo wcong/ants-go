@@ -1,35 +1,33 @@
 package http
 
 import (
-	"ants/http/server"
+	"ants/conf"
 	"log"
 	Http "net/http"
+	"strconv"
+	"sync"
 )
 
 type HttpServer struct {
 	Http.Server
 }
 
-func InitServer(ch chan int) *HttpServer {
-	log.Println("going to start  server http")
-	serveMux := Http.NewServeMux()
-	serveMux.HandleFunc("/", server.Welcome)
-	serveMux.HandleFunc("/spiders", server.Spiders)
+func NewHttpServer(setting *conf.Settings, handler Http.Handler) *HttpServer {
+	port := strconv.Itoa(setting.HttpPort)
 	httpServer := &HttpServer{
 		Http.Server{
-			Addr:    ":8200",
-			Handler: serveMux,
+			Addr:    ":" + port,
+			Handler: handler,
 		},
 	}
-
-	log.Println("going to start  server http")
-	go func() {
-		err := httpServer.ListenAndServe()
-		log.Println("start to server http")
-		ch <- 1
-		if err != nil {
-			log.Panicln(err)
-		}
-	}()
 	return httpServer
+}
+
+func (this *HttpServer) Start(wg *sync.WaitGroup) {
+	log.Println("start to server http" + this.Addr)
+	err := this.ListenAndServe()
+	if err != nil {
+		log.Panicln(err)
+	}
+	wg.Done()
 }

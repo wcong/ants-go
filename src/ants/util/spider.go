@@ -8,5 +8,5 @@ import (
 type Spider struct {
 	Name      string
 	StartUrls []string
-	Parse     func(response *http.Response) (*http.Request, error)
+	ParseMap  map[string]func(response *http.Response) ([]*http.Request, error)
 }

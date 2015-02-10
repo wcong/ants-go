@@ -6,7 +6,9 @@ import (
 	"ants/http"
 	"ants/transport"
 	"ants/util"
+	"log"
 	"strconv"
+	"sync"
 )
 
 type Node struct {
@@ -30,11 +32,16 @@ func NewNode(settings *conf.Settings) *Node {
 	}
 }
 func (this *Node) Init() {
-	initChan := make(chan int)
-	this.Crawler = crawler.Crawler{}
+	this.Crawler = &crawler.Crawler{}
 	this.Crawler.LoadSpiders()
-	http.InitServer(initChan)
+	router := NewRouter(this)
+	this.HttpServer = http.NewHttpServer(this.Settings, router)
 }
 
 func (this *Node) Start() {
+	wg := new(sync.WaitGroup)
+	wg.Add(1)
+	go this.HttpServer.Start(wg)
+	log.Println("ok,we are ready")
+	wg.Wait()
 }

@@ -10,11 +10,14 @@ func MakeDeadLoopSpider() *util.Spider {
 	spider := util.Spider{}
 	spider.Name = "deal_loop_spider"
 	spider.StartUrls = []string{"http://www.baidu.com/s?wd=1"}
-	spider.Parse = func(response *http.Response) (*http.Request, error) {
-		doc, err := goquery.NewDocumentFromReader(response.Body)
+	spider.ParseMap = make(map[string]func(response *http.Response) ([]*http.Request, error))
+	spider.ParseMap["base"] = func(response *http.Response) ([]*http.Request, error) {
+		doc, err := goquery.NewDocumentFromReader(response.GoResponse.Body)
 		val, _ := doc.Find("#page a[text()=\"下一页\"]").Attr("href")
 		request, err := http.NewRequest("GET", val, nil)
-		return request, err
+		requestList := make([]*http.Request, 0)
+		requestList = append(requestList, request)
+		return requestList, err
 	}
 	return &spider
 }
