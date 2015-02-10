@@ -1,12 +1,11 @@
 package util
 
 import (
-	"ants/node"
 	"hash/fnv"
 )
 
-func HashNode(nodeInfo *node.Node) uint64 {
+func HashString(encode string) uint64 {
 	hash := fnv.New64()
-	hash.Write([]byte(nodeInfo.Ip + string(nodeInfo.Port)))
+	hash.Write([]byte(encode))
 	return hash.Sum64()
 }

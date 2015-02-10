@@ -1,10 +1,9 @@
 package http
 
 import (
-	"net/http"
+	Http "net/http"
 )
 
 type Client struct {
-	http.Client
+	Http.Client
 }
-func 

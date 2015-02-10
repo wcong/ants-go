@@ -3,19 +3,20 @@ package http
 import (
 	"fmt"
 	"io"
-	"net/http"
+	Http "net/http"
 )
 
 type Request struct {
-	http.Request
+	Http.Request
 }
 
 func NewRequest(method, url string, body io.Reader) (*Request, error) {
-	httpRequest, err := http.NewRequest(method, url, body)
+	httpRequest, err := Http.NewRequest(method, url, body)
 	if err != nil {
 		return nil, err
 	}
-	return httpRequest, err
+	request := Request{*httpRequest}
+	return &request, err
 }
 
 func PrintPackage() {

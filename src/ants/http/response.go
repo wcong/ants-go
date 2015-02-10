@@ -1,7 +1,9 @@
 package http
 
-import "net/http"
+import (
+	Http "net/http"
+)
 
 type Response struct {
-	http.Response
+	Http.Response
 }

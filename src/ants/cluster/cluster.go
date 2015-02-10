@@ -28,7 +28,7 @@ func (this *Cluster) AddNode(node *Node) {
 	if this.nodeList == nil {
 		this.nodeList = make([]*Node, 3)
 	}
-	this.nodeList[len(this.nodeList)] = node
+	append(this.nodeList, node)
 }
 
 func (this *Cluster) GetMasterNode() *Node {

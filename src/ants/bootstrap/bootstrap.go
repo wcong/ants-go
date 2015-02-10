@@ -2,16 +2,29 @@ package main
 
 import (
 	. "ants/conf"
+	"ants/node"
 	"flag"
+	"os"
 )
 
-func initFlag() *Settings {
-	settings := &Settings{1}
+const (
+	CONF_FILE = "/../../../conf/conf.json"
+)
+
+func initFlag(settings *Settings) {
 	flag.IntVar(&settings.TcpPort, "tcp", 8200, "tcp port")
-	return settings
+	flag.IntVar(&settings.HttpPort, "http", 8300, "http port")
 }
 func MakeSettings() *Settings {
-	settings := initFlag()
+	pwd, _ := os.Getwd()
+	settings := LoadSettingFromFile(pwd + CONF_FILE)
+	initFlag(settings)
 	flag.Parse()
 	return settings
+}
+func main() {
+	setting := MakeSettings()
+	Node := node.NewNode(setting)
+	Node.Init()
+	Node.Start()
 }

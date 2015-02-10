@@ -1,9 +1,11 @@
 package crawler
 
-import "fmt"
-import "ants/http/request"
-import "ants/http/response"
+import (
+	"ants/http"
+	"fmt"
+)
 
 func Download(resuqest http.Request) *http.Response {
-
+	fmt.Println("download")
+	return nil
 }
