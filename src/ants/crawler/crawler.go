@@ -30,12 +30,20 @@ func (this *Crawler) StartSpider(spiderName string) {
 }
 func (this *Crawler) RunSpider(spider *util.Spider, request *http.Request) {
 	response := Download(request)
-	if response != nil {
+	if response == nil {
 		return
 	}
-	requestList, err := spider.ParseMap[response.ParserName](response)
+	if response.ParserName == "" {
+		response.ParserName = util.BASE_PARSE_NAME
+	}
+	parseFunc, ok := spider.ParseMap[response.ParserName]
+	if !ok {
+		return
+	}
+	requestList, err := parseFunc(response)
 	if err != nil {
 		log.Fatal(err)
+		return
 	}
 	if requestList == nil {
 		return

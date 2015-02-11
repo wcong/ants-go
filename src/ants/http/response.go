@@ -6,5 +6,5 @@ import (
 
 type Response struct {
 	GoResponse *Http.Response
-	ParserName string "base"
+	ParserName string
 }

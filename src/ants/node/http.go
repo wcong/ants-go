@@ -13,9 +13,10 @@ type Router struct {
 }
 
 func (this *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	url := r.URl.
-		log.Println("get request:" + url)
-	if h, ok := this.Mux[url]; ok {
+	url := r.URL.String()
+	log.Println("get request:" + url)
+	path := r.URL.Path
+	if h, ok := this.Mux[path]; ok {
 		h(w, r)
 		return
 	}
@@ -62,6 +63,7 @@ type CrawlInfo struct {
 
 func (this *Router) Crawl(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
+	r.ParseForm()
 	spiderName := r.Form["spider"][0]
 	now := time.Now().Format("2006-01-02 15:04:05")
 	crawlInfo := CrawlInfo{

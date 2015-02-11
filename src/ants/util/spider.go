@@ -5,6 +5,10 @@ import (
 	"ants/http"
 )
 
+const (
+	BASE_PARSE_NAME = "base"
+)
+
 type Spider struct {
 	Name      string
 	StartUrls []string
