@@ -13,8 +13,8 @@ const (
 )
 
 func initFlag(settings *Settings) {
-	flag.IntVar(&settings.TcpPort, "tcp", 8200, "tcp port")
-	flag.IntVar(&settings.HttpPort, "http", 8300, "http port")
+	flag.IntVar(&settings.TcpPort, "tcp", settings.TcpPort, "tcp port")
+	flag.IntVar(&settings.HttpPort, "http", settings.HttpPort, "http port")
 }
 func MakeSettings() *Settings {
 	pwd, _ := os.Getwd()

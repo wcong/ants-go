@@ -1,4 +1,5 @@
 {
+ "ClusterName" : "guess",
  "HttpPort" : 8200,
  "MulticastEnable" : false,
  "Name" : "ants",

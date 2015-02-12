@@ -19,6 +19,7 @@ type Node struct {
 	Crawler    *crawler.Crawler
 	HttpServer *http.HttpServer
 	TcpServer  *transport.TcpManager
+	Cluster    *Cluster
 }
 
 func NewNode(settings *conf.Settings) *Node {
@@ -32,10 +33,11 @@ func NewNode(settings *conf.Settings) *Node {
 	}
 }
 func (this *Node) Init() {
-	this.Crawler = &crawler.Crawler{}
+	this.Crawler = crawler.NewCrawler()
 	this.Crawler.LoadSpiders()
 	router := NewRouter(this)
 	this.HttpServer = http.NewHttpServer(this.Settings, router)
+	this.Cluster = NewCluster(this.Settings, this)
 }
 
 func (this *Node) Start() {

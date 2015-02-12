@@ -5,5 +5,10 @@ import (
 )
 
 type Client struct {
-	Http.Client
+	GoClient *Http.Client
+}
+
+func NewClient() *Client {
+	goClient := &Http.Client{}
+	return &Client{goClient}
 }

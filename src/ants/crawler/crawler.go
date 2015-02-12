@@ -8,53 +8,61 @@ import (
 )
 
 type Crawler struct {
-	SpiderMap map[string]*util.Spider
+	SpiderMap     map[string]*util.Spider
+	Status        CrawlerStatus
+	RequestQuene  *RequestQuene
+	ResponseQuene *ResponseQuene
+	Downloader    *Downloader
+	Scraper       *Scraper
+}
+
+type StartSpiderResult struct {
+	Success bool
+	Message string
+	Spider  string
+	Time    string
+}
+
+func NewCrawler() *Crawler {
+	requestQuene := NewRequestQuene()
+	responseQuene := NewResponseQuene()
+	spiderMap := make(map[string]*util.Spider)
+	downloader := NewDownloader(requestQuene, responseQuene)
+	scraper := NewScraper(requestQuene, responseQuene, spiderMap)
+	crawler := Crawler{spiderMap, CrawlerStatus{}, requestQuene, responseQuene, downloader, scraper}
+	return &crawler
 }
 
 func (this *Crawler) LoadSpiders() {
-	this.SpiderMap = make(map[string]*util.Spider)
 	deadLoopTest := spiders.MakeDeadLoopSpider()
 	this.SpiderMap[deadLoopTest.Name] = deadLoopTest
 }
-func (this *Crawler) StartSpider(spiderName string) {
+func (this *Crawler) StartSpider(spiderName string) *StartSpiderResult {
 	log.Println("start to crawl spider " + spiderName)
 	spider := this.SpiderMap[spiderName]
+	result := &StartSpiderResult{}
+	if spider.Status == util.SPIDERS_STATUS_RUNNING {
+		result.Success = false
+		result.Message = "spider already runing"
+		result.Spider = spider.Name
+		return result
+	}
+	spider.Status = util.SPIDERS_STATUS_RUNNING
 	for _, url := range spider.StartUrls {
-		request, err := http.NewRequest("GET", url, nil)
+		request, err := http.NewRequest("GET", url, nil, spider.Name, util.BASE_PARSE_NAME)
 		if err != nil {
 			log.Fatal(err)
 			continue
 		}
-		go this.RunSpider(spider, request)
+		this.RequestQuene.Push(request)
 	}
+	this.RunSpider()
+	result.Success = true
+	result.Message = "start spider"
+	result.Spider = spider.Name
+	return result
 }
-func (this *Crawler) RunSpider(spider *util.Spider, request *http.Request) {
-	response := Download(request)
-	if response == nil {
-		return
-	}
-	if response.ParserName == "" {
-		response.ParserName = util.BASE_PARSE_NAME
-	}
-	parseFunc, ok := spider.ParseMap[response.ParserName]
-	if !ok {
-		return
-	}
-	requestList, err := parseFunc(response)
-	if err != nil {
-		log.Fatal(err)
-		return
-	}
-	if requestList == nil {
-		return
-	}
-	requestListLength := len(requestList)
-	if requestListLength == 1 {
-		this.RunSpider(spider, requestList[0])
-	} else {
-		this.RunSpider(spider, requestList[0])
-		for i := 1; i < requestListLength; i++ {
-			go this.RunSpider(spider, requestList[i])
-		}
-	}
+func (this *Crawler) RunSpider() {
+	go this.Downloader.Start()
+	go this.Scraper.Start()
 }
