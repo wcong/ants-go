@@ -9,6 +9,7 @@ import (
 const (
 	SCRAPY_STATUS_STOP = iota
 	SCRAPY_STATUS_RUNING
+	SCRAPY_STATUS_PAUSE
 )
 
 type Scraper struct {
@@ -34,14 +35,21 @@ func (this *Scraper) Start() {
 func (this *Scraper) Stop() {
 	this.Status = SCRAPY_STATUS_STOP
 }
+func (this *Scraper) Pause() {
+	this.Status = SCRAPY_STATUS_PAUSE
+}
 func (this *Scraper) Scrapy() {
 	for {
+		if this.Status == SCRAPY_STATUS_PAUSE {
+			time.Sleep(1 * time.Second)
+			continue
+		}
 		if this.Status != SCRAPY_STATUS_RUNING {
 			break
 		}
 		response := this.ResponseQuene.Pop()
 		if response == nil {
-			time.Sleep(3 * time.Second)
+			time.Sleep(1 * time.Second)
 			continue
 		}
 		log.Println("scrapy :" + response.GoResponse.Request.URL.String())

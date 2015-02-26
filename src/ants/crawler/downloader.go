@@ -9,6 +9,7 @@ import (
 const (
 	DOWNLOADER_STATUS_STOP = iota
 	DOWNLOADER_STATUS_RUNING
+	DOWNLOADER_STATUS_PAUSE
 )
 
 type Downloader struct {
@@ -36,14 +37,21 @@ func (this *Downloader) Start() {
 func (this *Downloader) Stop() {
 	this.Status = DOWNLOADER_STATUS_STOP
 }
+func (this *Downloader) Pause() {
+	this.Status = DOWNLOADER_STATUS_PAUSE
+}
 func (this *Downloader) Download() {
 	for {
+		if this.Status == DOWNLOADER_STATUS_PAUSE {
+			time.Sleep(1 * time.Second)
+			continue
+		}
 		if this.Status != DOWNLOADER_STATUS_RUNING {
 			break
 		}
 		request := this.RequestQuene.Pop()
 		if request == nil {
-			time.Sleep(3 * time.Second)
+			time.Sleep(1 * time.Second)
 			continue
 		}
 		log.Println("download url:" + request.GoRequest.URL.String())
