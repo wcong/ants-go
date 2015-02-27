@@ -1,7 +1,7 @@
 package http
 
 import (
-	"ants/conf"
+	"ants/util"
 	"log"
 	Http "net/http"
 	"strconv"
@@ -12,7 +12,7 @@ type HttpServer struct {
 	Http.Server
 }
 
-func NewHttpServer(setting *conf.Settings, handler Http.Handler) *HttpServer {
+func NewHttpServer(setting *util.Settings, handler Http.Handler) *HttpServer {
 	port := strconv.Itoa(setting.HttpPort)
 	httpServer := &HttpServer{
 		Http.Server{
@@ -29,5 +29,6 @@ func (this *HttpServer) Start(wg *sync.WaitGroup) {
 	if err != nil {
 		log.Panicln(err)
 	}
+	log.Println("http server down")
 	wg.Done()
 }

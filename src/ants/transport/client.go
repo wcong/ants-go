@@ -6,16 +6,13 @@ import (
 	"strconv"
 )
 
-func InitClient(ip string, port int) net.Conn {
+func InitClient(ip string, port int) (net.Conn, error) {
 	conn, err := net.Dial("tcp", ip+":"+strconv.Itoa(port))
-	if err != nil {
-		log.Fatal(err)
-	}
-	return conn
+	return conn, err
 }
 func SendMessage(conn net.Conn, message string) {
 	_, err := conn.Write([]byte(message))
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
 	}
 }

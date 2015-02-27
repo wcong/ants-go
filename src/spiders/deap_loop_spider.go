@@ -2,12 +2,12 @@ package spiders
 
 import (
 	"ants/http"
-	"ants/util"
+	"ants/spiders"
 	"github.com/PuerkitoBio/goquery"
 )
 
-func MakeDeadLoopSpider() *util.Spider {
-	spider := util.Spider{}
+func MakeDeadLoopSpider() *spiders.Spider {
+	spider := spiders.Spider{}
 	spider.Name = "deal_loop_spider"
 	spider.StartUrls = []string{"http://www.baidu.com/s?wd=1"}
 	spider.ParseMap = make(map[string]func(response *http.Response) ([]*http.Request, error))
@@ -21,7 +21,7 @@ func MakeDeadLoopSpider() *util.Spider {
 			}
 		})
 		nextPage = "http://www.baidu.com" + nextPage
-		request, err := http.NewRequest("GET", nextPage, nil, spider.Name, util.BASE_PARSE_NAME)
+		request, err := http.NewRequest("GET", nextPage, nil, spider.Name, spiders.BASE_PARSE_NAME)
 		requestList := make([]*http.Request, 0)
 		requestList = append(requestList, request)
 		return requestList, err

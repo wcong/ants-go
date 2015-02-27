@@ -1,8 +1,8 @@
 package main
 
 import (
-	. "ants/conf"
 	"ants/node"
+	. "ants/util"
 	"flag"
 	"log"
 	"os"
@@ -24,6 +24,7 @@ func MakeSettings() *Settings {
 	return settings
 }
 func main() {
+	log.SetFlags(log.Ldate | log.Ltime | log.Lshortfile)
 	log.Println("let us go shipping")
 	setting := MakeSettings()
 	Node := node.NewNode(setting)

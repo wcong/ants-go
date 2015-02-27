@@ -1,7 +1,7 @@
 package crawler
 
 import (
-	"ants/util"
+	"ants/spiders"
 	"log"
 	"time"
 )
@@ -16,10 +16,10 @@ type Scraper struct {
 	Status        int
 	RequestQuene  *RequestQuene
 	ResponseQuene *ResponseQuene
-	SpiderMap     map[string]*util.Spider
+	SpiderMap     map[string]*spiders.Spider
 }
 
-func NewScraper(requestQuene *RequestQuene, responseQuene *ResponseQuene, spiderMap map[string]*util.Spider) *Scraper {
+func NewScraper(requestQuene *RequestQuene, responseQuene *ResponseQuene, spiderMap map[string]*spiders.Spider) *Scraper {
 	return &Scraper{SCRAPY_STATUS_STOP, requestQuene, responseQuene, spiderMap}
 }
 
@@ -37,6 +37,9 @@ func (this *Scraper) Stop() {
 }
 func (this *Scraper) Pause() {
 	this.Status = SCRAPY_STATUS_PAUSE
+}
+func (this *Scraper) UnPause() {
+	this.Status = SCRAPY_STATUS_RUNING
 }
 func (this *Scraper) Scrapy() {
 	for {

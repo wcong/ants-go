@@ -40,6 +40,9 @@ func (this *Downloader) Stop() {
 func (this *Downloader) Pause() {
 	this.Status = DOWNLOADER_STATUS_PAUSE
 }
+func (this *Downloader) UnPause() {
+	this.Status = DOWNLOADER_STATUS_RUNING
+}
 func (this *Downloader) Download() {
 	for {
 		if this.Status == DOWNLOADER_STATUS_PAUSE {

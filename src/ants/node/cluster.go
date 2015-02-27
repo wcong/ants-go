@@ -1,7 +1,7 @@
 package node
 
 import (
-	"ants/conf"
+	"ants/util"
 )
 
 type Cluster struct {
@@ -11,8 +11,10 @@ type Cluster struct {
 	MasterNode *NodeInfo
 }
 
-func NewCluster(settings *conf.Settings, localNode *NodeInfo) *Cluster {
-	return &Cluster{settings.Name, make([]*NodeInfo, 0), localNode, localNode}
+func NewCluster(settings *util.Settings, localNode *NodeInfo) *Cluster {
+	cluster := &Cluster{settings.Name, make([]*NodeInfo, 0), localNode, localNode}
+	cluster.NodeList = append(cluster.NodeList, localNode)
+	return cluster
 }
 func (this *Cluster) AddNode(nodeInfo *NodeInfo) {
 	this.NodeList = append(this.NodeList, nodeInfo)
@@ -20,6 +22,7 @@ func (this *Cluster) AddNode(nodeInfo *NodeInfo) {
 		this.ElectMaster()
 	}
 }
-func (this *Cluster) ElectMaster() {
-
+func (this *Cluster) ElectMaster() *NodeInfo {
+	this.MasterNode = this.NodeList[0]
+	return this.MasterNode
 }

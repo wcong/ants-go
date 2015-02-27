@@ -1,4 +1,4 @@
-package util
+package spiders
 
 // where i defined spider
 import (

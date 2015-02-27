@@ -2,13 +2,13 @@ package crawler
 
 import (
 	"ants/http"
-	"ants/util"
+	base_spider "ants/spiders"
 	"log"
 	"spiders"
 )
 
 type Crawler struct {
-	SpiderMap     map[string]*util.Spider
+	SpiderMap     map[string]*base_spider.Spider
 	Status        CrawlerStatus
 	RequestQuene  *RequestQuene
 	ResponseQuene *ResponseQuene
@@ -26,7 +26,7 @@ type StartSpiderResult struct {
 func NewCrawler() *Crawler {
 	requestQuene := NewRequestQuene()
 	responseQuene := NewResponseQuene()
-	spiderMap := make(map[string]*util.Spider)
+	spiderMap := make(map[string]*base_spider.Spider)
 	downloader := NewDownloader(requestQuene, responseQuene)
 	scraper := NewScraper(requestQuene, responseQuene, spiderMap)
 	crawler := Crawler{spiderMap, CrawlerStatus{}, requestQuene, responseQuene, downloader, scraper}
@@ -41,15 +41,15 @@ func (this *Crawler) StartSpider(spiderName string) *StartSpiderResult {
 	log.Println("start to crawl spider " + spiderName)
 	spider := this.SpiderMap[spiderName]
 	result := &StartSpiderResult{}
-	if spider.Status == util.SPIDERS_STATUS_RUNNING {
+	if spider.Status == base_spider.SPIDERS_STATUS_RUNNING {
 		result.Success = false
 		result.Message = "spider already runing"
 		result.Spider = spider.Name
 		return result
 	}
-	spider.Status = util.SPIDERS_STATUS_RUNNING
+	spider.Status = base_spider.SPIDERS_STATUS_RUNNING
 	for _, url := range spider.StartUrls {
-		request, err := http.NewRequest("GET", url, nil, spider.Name, util.BASE_PARSE_NAME)
+		request, err := http.NewRequest("GET", url, nil, spider.Name, base_spider.BASE_PARSE_NAME)
 		if err != nil {
 			log.Fatal(err)
 			continue
@@ -65,4 +65,12 @@ func (this *Crawler) StartSpider(spiderName string) *StartSpiderResult {
 func (this *Crawler) RunSpider() {
 	go this.Downloader.Start()
 	go this.Scraper.Start()
+}
+func (this *Crawler) ParseSpider() {
+	this.Downloader.Pause()
+	this.Scraper.Pause()
+}
+func (this *Crawler) UnParseSpider() {
+	this.Downloader.UnPause()
+	this.Scraper.UnPause()
 }

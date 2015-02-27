@@ -70,11 +70,21 @@ func (this *Router) Crawl(w http.ResponseWriter, r *http.Request) {
 	w.Write(encoder)
 }
 
+func (this *Router) Cluster(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	encoder, err := json.Marshal(this.Node.Cluster)
+	if err != nil {
+		log.Fatal(err)
+	}
+	w.Write(encoder)
+}
+
 func NewRouter(node *Node) *Router {
 	router := &Router{}
 	router.Node = node
 	router.Mux = make(map[string]func(http.ResponseWriter, *http.Request))
 	router.Mux["/"] = router.Welcome
+	router.Mux["/cluster"] = router.Cluster
 	router.Mux["/spiders"] = router.Spiders
 	router.Mux["/crawl"] = router.Crawl
 	return router

@@ -4,7 +4,8 @@
  "MulticastEnable" : false,
  "Name" : "ants",
  "NodeList" : [
-	"127.0.0.1",
+	"127.0.0.1:8300",
+	"127.0.0.1:7300"
  ],
  "TcpPort" : 8300
 }
