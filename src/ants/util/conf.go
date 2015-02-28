@@ -6,6 +6,7 @@ import (
 	"strings"
 )
 
+// settings
 type Settings struct {
 	HttpPort        int
 	MulticastEnable bool
@@ -14,6 +15,8 @@ type Settings struct {
 	TcpPort         int
 }
 
+// load json config
+// change 127.0.0.1 to basic ip
 func LoadSettingFromFile(fileName string) *Settings {
 	file, err := os.Open(fileName)
 	if err != nil {

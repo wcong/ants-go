@@ -1,6 +1,7 @@
 package node
 
 import (
+	Http "ants/http"
 	"encoding/json"
 	"log"
 	"net/http"
@@ -30,7 +31,7 @@ type WelcomeInfo struct {
 }
 
 func (this *Router) Welcome(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set(Http.CONTENT_TYPE, Http.JSON_CONTENT_TYPE)
 	now := time.Now().Format("2006-01-02 15:04:05")
 	welcome := WelcomeInfo{
 		"for crawl",
@@ -61,7 +62,7 @@ func (this *Router) Crawl(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	spiderName := r.Form["spider"][0]
 	now := time.Now().Format("2006-01-02 15:04:05")
-	result := this.Node.Crawler.StartSpider(spiderName)
+	result := this.Node.StartSpider(spiderName)
 	result.Time = now
 	encoder, err := json.Marshal(result)
 	if err != nil {

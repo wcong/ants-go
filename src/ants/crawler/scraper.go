@@ -41,6 +41,11 @@ func (this *Scraper) Pause() {
 func (this *Scraper) UnPause() {
 	this.Status = SCRAPY_STATUS_RUNING
 }
+
+// dead loop for scrapy
+// pop a response
+// scrapy it
+// if scrapy some request, push it to quene
 func (this *Scraper) Scrapy() {
 	for {
 		if this.Status == SCRAPY_STATUS_PAUSE {

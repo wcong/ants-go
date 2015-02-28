@@ -1,12 +1,18 @@
 package crawler
 
 import (
-	"ants/http"
 	base_spider "ants/spiders"
 	"log"
 	"spiders"
 )
 
+// crawler
+// *		contains all spiders
+// *		record crawl status
+// *		all waiting request
+// *		all waiting response for scrape
+// *		download tools
+// *		scrape tools
 type Crawler struct {
 	SpiderMap     map[string]*base_spider.Spider
 	Status        CrawlerStatus
@@ -37,6 +43,8 @@ func (this *Crawler) LoadSpiders() {
 	deadLoopTest := spiders.MakeDeadLoopSpider()
 	this.SpiderMap[deadLoopTest.Name] = deadLoopTest
 }
+
+// start a spider
 func (this *Crawler) StartSpider(spiderName string) *StartSpiderResult {
 	log.Println("start to crawl spider " + spiderName)
 	spider := this.SpiderMap[spiderName]
@@ -48,28 +56,27 @@ func (this *Crawler) StartSpider(spiderName string) *StartSpiderResult {
 		return result
 	}
 	spider.Status = base_spider.SPIDERS_STATUS_RUNNING
-	for _, url := range spider.StartUrls {
-		request, err := http.NewRequest("GET", url, nil, spider.Name, base_spider.BASE_PARSE_NAME)
-		if err != nil {
-			log.Fatal(err)
-			continue
-		}
+	startRequests := spider.MakeStartRequests()
+	for _, request := range startRequests {
 		this.RequestQuene.Push(request)
 	}
 	this.RunSpider()
 	result.Success = true
-	result.Message = "start spider"
+	result.Message = "started spider"
 	result.Spider = spider.Name
 	return result
 }
+
 func (this *Crawler) RunSpider() {
 	go this.Downloader.Start()
 	go this.Scraper.Start()
 }
+
 func (this *Crawler) ParseSpider() {
 	this.Downloader.Pause()
 	this.Scraper.Pause()
 }
+
 func (this *Crawler) UnParseSpider() {
 	this.Downloader.UnPause()
 	this.Scraper.UnPause()

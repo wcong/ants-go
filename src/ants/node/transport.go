@@ -5,6 +5,7 @@ import (
 	"ants/transport"
 	"ants/util"
 	"encoding/json"
+	"io"
 	"log"
 	"net"
 	"strconv"
@@ -18,13 +19,16 @@ const (
 	HADNLER_JOIN_REQUEST = iota
 	HADNLER_JOIN_RESPONSE
 	HANDLER_SEND_MASTER_REQUEST
+	HANDLER_SEND_REQUEST
+	HANDLER_SEND_REQUEST_RESULT
 )
 
 // transport message struct
 type JSONMessage struct {
-	Type     int
-	Request  http.Request
-	NodeInfo NodeInfo
+	Type         int
+	CrawlResult  string // if success just empty string,or error reason
+	RequestSlice []*http.Request
+	NodeInfo     NodeInfo
 }
 
 // what a transporter do
@@ -111,7 +115,7 @@ func (this *Transporter) ClientReader(conn net.Conn) {
 		_, redErr := conn.Read(buffer)
 		if redErr != nil {
 			time.Sleep(1 * time.Second)
-			if redErr.Error() != "EOF" {
+			if redErr != io.EOF {
 				log.Println(redErr)
 			}
 		} else {
@@ -156,8 +160,8 @@ func (this *Transporter) handleMessage(data string, conn net.Conn) {
 }
 
 // send message to node
-func (this *Transporter) SendMessageToNode(nodeInfo *NodeInfo, message string) {
-	this.SendMessage(this.ConnMap[nodeInfo.Name], message)
+func (this *Transporter) SendMessageToNode(nodeName, message string) {
+	this.SendMessage(this.ConnMap[nodeName], message)
 }
 
 // send message by connection

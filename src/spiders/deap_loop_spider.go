@@ -21,7 +21,7 @@ func MakeDeadLoopSpider() *spiders.Spider {
 			}
 		})
 		nextPage = "http://www.baidu.com" + nextPage
-		request, err := http.NewRequest("GET", nextPage, nil, spider.Name, spiders.BASE_PARSE_NAME)
+		request, err := http.NewRequest("GET", nextPage, spider.Name, spiders.BASE_PARSE_NAME, nil, 1)
 		requestList := make([]*http.Request, 0)
 		requestList = append(requestList, request)
 		return requestList, err

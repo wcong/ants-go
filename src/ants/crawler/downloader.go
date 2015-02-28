@@ -12,6 +12,7 @@ const (
 	DOWNLOADER_STATUS_PAUSE
 )
 
+// downloader tools
 type Downloader struct {
 	Status        int
 	RequestQuene  *RequestQuene
@@ -43,6 +44,11 @@ func (this *Downloader) Pause() {
 func (this *Downloader) UnPause() {
 	this.Status = DOWNLOADER_STATUS_RUNING
 }
+
+// dead loop for download
+// pop a request
+// download it
+// push to response quene
 func (this *Downloader) Download() {
 	for {
 		if this.Status == DOWNLOADER_STATUS_PAUSE {
@@ -63,7 +69,7 @@ func (this *Downloader) Download() {
 		if err != nil {
 			log.Fatal(err)
 		}
-		Response := http.NewResponse(response, request.SpiderName, request.ParserName)
+		Response := http.NewResponse(response, request.SpiderName, request.ParserName, request.NodeName)
 		this.ResponseQuene.Push(Response)
 	}
 }
