@@ -1,7 +1,6 @@
 package node
 
 import (
-	"ants/http"
 	"ants/transport"
 	"ants/util"
 	"encoding/json"
@@ -16,20 +15,7 @@ import (
 const (
 	TCP_EDN_SIGN         = "\t\n"
 	TCP_EDN_SIGN_REPLACE = "\n"
-	HADNLER_JOIN_REQUEST = iota
-	HADNLER_JOIN_RESPONSE
-	HANDLER_SEND_MASTER_REQUEST
-	HANDLER_SEND_REQUEST
-	HANDLER_SEND_REQUEST_RESULT
 )
-
-// transport message struct
-type JSONMessage struct {
-	Type         int
-	CrawlResult  string // if success just empty string,or error reason
-	RequestSlice []*http.Request
-	NodeInfo     NodeInfo
-}
 
 // what a transporter do
 // *		init conn
@@ -40,7 +26,7 @@ type Transporter struct {
 	Settings        *util.Settings
 	TcpServer       net.Listener
 	ConnMap         map[string]net.Conn
-	HandleMap       map[int]func(*JSONMessage, net.Conn)
+	HandleMap       map[int]func(*RequestMessage, net.Conn)
 	ServerTmpString string
 	Node            *Node
 }
@@ -54,7 +40,7 @@ func NewTransporter(settings *util.Settings, node *Node) *Transporter {
 		panic(err)
 	}
 	connMap := make(map[string]net.Conn)
-	handleMap := make(map[int]func(*JSONMessage, net.Conn))
+	handleMap := make(map[int]func(*RequestMessage, net.Conn))
 	transporter := &Transporter{settings, ln, connMap, handleMap, "", node}
 	transporter.HandleMap[HADNLER_JOIN_REQUEST] = transporter.handlerJoinRequest
 	transporter.HandleMap[HANDLER_SEND_MASTER_REQUEST] = transporter.handlerSendMasterRequest
@@ -79,9 +65,9 @@ func (this *Transporter) Start() {
 				log.Println(err)
 			} else {
 				go this.ClientReader(conn)
-				jsonMessage := JSONMessage{
+				jsonMessage := RequestMessage{
 					Type:     HADNLER_JOIN_REQUEST,
-					NodeInfo: *this.Node.NodeInfo,
+					NodeInfo: this.Node.NodeInfo,
 				}
 				message, _ := json.Marshal(jsonMessage)
 				this.SendMessage(conn, string(message))
@@ -148,7 +134,7 @@ func (this *Transporter) handleMessage(data string, conn net.Conn) {
 	if len(data) > 0 {
 		splitString := strings.Split(data, TCP_EDN_SIGN)
 		for _, jsonString := range splitString {
-			var jsonMessage JSONMessage
+			var jsonMessage RequestMessage
 			err := json.Unmarshal([]byte(jsonString), &jsonMessage)
 			if err != nil {
 				log.Println(err)
@@ -175,10 +161,10 @@ func (this *Transporter) SendMessage(conn net.Conn, message string) {
 }
 
 // what if some node what to join
-func (this *Transporter) handlerJoinRequest(jsonMessage *JSONMessage, conn net.Conn) {
+func (this *Transporter) handlerJoinRequest(jsonMessage *RequestMessage, conn net.Conn) {
 	if jsonMessage.NodeInfo.Ip != "" {
 		log.Println("get node join request:ip:" + jsonMessage.NodeInfo.Ip + ";port:" + strconv.Itoa(jsonMessage.NodeInfo.Port))
-		nodeInfo := &jsonMessage.NodeInfo
+		nodeInfo := jsonMessage.NodeInfo
 		if _, ok := this.ConnMap[nodeInfo.Name]; !ok {
 			this.ConnMap[nodeInfo.Name] = conn
 		}
@@ -187,6 +173,6 @@ func (this *Transporter) handlerJoinRequest(jsonMessage *JSONMessage, conn net.C
 }
 
 // deal with send master request,old master node elect new master node ,and send it to all node
-func (this *Transporter) handlerSendMasterRequest(jsonMessage *JSONMessage, conn net.Conn) {
-	this.Node.AddMasterNode(&jsonMessage.NodeInfo)
+func (this *Transporter) handlerSendMasterRequest(jsonMessage *RequestMessage, conn net.Conn) {
+	this.Node.AddMasterNode(jsonMessage.NodeInfo)
 }

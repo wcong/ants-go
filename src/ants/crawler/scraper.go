@@ -1,6 +1,7 @@
 package crawler
 
 import (
+	"ants/http"
 	"ants/spiders"
 	"log"
 	"time"
@@ -12,15 +13,22 @@ const (
 	SCRAPY_STATUS_PAUSE
 )
 
+type ScrapeResult struct {
+	Request         *http.Request
+	CrawlResult     string // if success just empty string,or error reason
+	ScrapedRequests []*http.Request
+}
+
 type Scraper struct {
 	Status        int
-	RequestQuene  *RequestQuene
+	ResultQuene   *ResultQuene
 	ResponseQuene *ResponseQuene
 	SpiderMap     map[string]*spiders.Spider
 }
 
-func NewScraper(requestQuene *RequestQuene, responseQuene *ResponseQuene, spiderMap map[string]*spiders.Spider) *Scraper {
-	return &Scraper{SCRAPY_STATUS_STOP, requestQuene, responseQuene, spiderMap}
+//
+func NewScraper(resultQuene *ResultQuene, responseQuene *ResponseQuene, spiderMap map[string]*spiders.Spider) *Scraper {
+	return &Scraper{SCRAPY_STATUS_STOP, resultQuene, responseQuene, spiderMap}
 }
 
 func (this *Scraper) Start() {
@@ -62,13 +70,15 @@ func (this *Scraper) Scrapy() {
 		}
 		log.Println("scrapy :" + response.GoResponse.Request.URL.String())
 		requestList, err := this.SpiderMap[response.SpiderName].ParseMap[response.ParserName](response)
+		scrapeResult := &ScrapeResult{}
+		scrapeResult.Request = response.Request
 		if err != nil {
-			log.Fatal(err)
+			log.Println(err)
+			scrapeResult.CrawlResult = err.Error()
 		}
 		if requestList != nil {
-			for _, request := range requestList {
-				this.RequestQuene.Push(request)
-			}
+			scrapeResult.ScrapedRequests = requestList
 		}
+		this.ResultQuene.Push(scrapeResult)
 	}
 }

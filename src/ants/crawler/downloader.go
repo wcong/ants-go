@@ -69,7 +69,7 @@ func (this *Downloader) Download() {
 		if err != nil {
 			log.Fatal(err)
 		}
-		Response := http.NewResponse(response, request.SpiderName, request.ParserName, request.NodeName)
+		Response := http.NewResponse(response, request, request.SpiderName, request.ParserName, request.NodeName)
 		this.ResponseQuene.Push(Response)
 	}
 }

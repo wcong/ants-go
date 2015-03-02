@@ -12,7 +12,7 @@ what a Distributer do
 */
 const (
 	DISTRIBUTE_RUNING = iota
-	DISTRIBUTE_PARSE
+	DISTRIBUTE_PAUSE
 	DISTRIBUTE_STOP
 )
 
@@ -30,14 +30,14 @@ func (this *Distributer) IsStop() bool {
 	return this.Status == DISTRIBUTE_STOP
 }
 
-func (this *Distributer) IsParse() bool {
-	return this.Status == DISTRIBUTE_PARSE
+func (this *Distributer) IsPause() bool {
+	return this.Status == DISTRIBUTE_PAUSE
 }
 func (this *Distributer) Run() {
 	this.Status = DISTRIBUTE_RUNING
 }
-func (this *Distributer) Parse() {
-	this.Status = DISTRIBUTE_PARSE
+func (this *Distributer) Pause() {
+	this.Status = DISTRIBUTE_PAUSE
 }
 func (this *Distributer) Stop() {
 	this.Status = DISTRIBUTE_STOP

@@ -28,6 +28,10 @@ func (this *RequestQuene) Pop() *http.Request {
 	return value.(*http.Request)
 }
 
+func (this *RequestQuene) IsEmpty() bool {
+	return this.RequestList.Len() == 0
+}
+
 type ResponseQuene struct {
 	ResponseList *list.List
 }
@@ -49,4 +53,26 @@ func (this *ResponseQuene) Pop() *http.Response {
 	this.ResponseList.Remove(element)
 	value := element.Value
 	return value.(*http.Response)
+}
+
+type ResultQuene struct {
+	ResultList *list.List
+}
+
+func NewResultQuene() *ResultQuene {
+	resultList := list.New()
+	resultQuene := &ResultQuene{resultList}
+	return resultQuene
+}
+func (this *ResultQuene) Push(scrapeResult *ScrapeResult) {
+	this.ResultList.PushBack(scrapeResult)
+}
+func (this *ResultQuene) Pop() *ScrapeResult {
+	element := this.ResultList.Front()
+	if element == nil {
+		return nil
+	}
+	this.ResultList.Remove(element)
+	value := element.Value
+	return value.(*ScrapeResult)
 }

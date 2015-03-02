@@ -14,6 +14,7 @@ what a cluster would do
 *	choose a master node
 *	distribute a request
 * 	accept crawl result
+*	add a request
 */
 
 // basic cluster infomation
@@ -92,4 +93,27 @@ func (this *Cluster) Crawled(nodeName string, requestHashName uint64) {
 		return
 	}
 	delete(requestMap, requestHashName)
+}
+
+// add a request to quene
+func (this *Cluster) AddRequest(request *http.Request) {
+	this.RequestStatus.WaitingQuene.Push(request)
+}
+
+// get master node name
+func (this *Cluster) GetMasterName() string {
+	return this.ClusterInfo.MasterNode.Name
+}
+
+// is all loop stop
+func (this *Cluster) IsStop() bool {
+	if !this.RequestStatus.WaitingQuene.IsEmpty() {
+		return false
+	}
+	for _, requestMap := range this.RequestStatus.CrawlingMap {
+		if len(requestMap) > 0 {
+			return false
+		}
+	}
+	return true
 }

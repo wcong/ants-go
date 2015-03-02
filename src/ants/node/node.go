@@ -38,6 +38,7 @@ type Node struct {
 	Transporter *Transporter
 	Cluster     *Cluster
 	Distributer *Distributer
+	Reporter    *Reporter
 }
 
 func NewNode(settings *util.Settings) *Node {
@@ -55,8 +56,9 @@ func NewNode(settings *util.Settings) *Node {
 
 // init all base service and container
 func (this *Node) Init() {
+	this.Reporter = NewReporter(this)
 	this.Cluster = NewCluster(this.Settings, this.NodeInfo)
-	this.Crawler = crawler.NewCrawler()
+	this.Crawler = crawler.NewCrawler(this.Reporter.ResultQuene)
 	this.Crawler.LoadSpiders()
 	router := NewRouter(this)
 	this.HttpServer = http.NewHttpServer(this.Settings, router)
@@ -82,9 +84,9 @@ func (this *Node) AddNodeToCluster(nodeInfo *NodeInfo) {
 	this.Cluster.AddNode(nodeInfo)
 	if this.Cluster.ClusterInfo.LocalNode == this.Cluster.ClusterInfo.MasterNode {
 		masterNode := this.Cluster.ElectMaster()
-		jsonMessage := JSONMessage{
+		jsonMessage := RequestMessage{
 			Type:     HANDLER_SEND_MASTER_REQUEST,
-			NodeInfo: *masterNode,
+			NodeInfo: masterNode,
 		}
 		json, _ := json.Marshal(jsonMessage)
 		message := string(json)
@@ -108,11 +110,15 @@ func (this *Node) AddMasterNode(masterNodeInfo *NodeInfo) {
 }
 
 // start a spider if not deap loop distribute ,start it
+// start a reporter report the crawl result
 func (this *Node) StartSpider(spiderName string) *crawler.StartSpiderResult {
 	result := this.Crawler.StartSpider(spiderName)
 	if result.Success && this.Distributer.IsStop() {
 		this.Distributer.Run()
 		go this.DistributeRequest()
+	}
+	if result.Success && this.Reporter.IsStop() {
+		go this.Reporter.Start()
 	}
 	return result
 }
@@ -123,7 +129,10 @@ func (this *Node) StartSpider(spiderName string) *crawler.StartSpiderResult {
 // tell cluster where is the request
 func (this *Node) DistributeRequest() {
 	for {
-		if this.Distributer.IsParse() {
+		if this.Distributer.IsStop() {
+			break
+		}
+		if this.Distributer.IsPause() {
 			time.Sleep(1 * time.Second)
 			continue
 		}
@@ -137,8 +146,11 @@ func (this *Node) DistributeRequest() {
 			this.Crawler.RequestQuene.Push(request)
 			this.Cluster.AddToCrawlingQuene(request)
 		} else {
-			jsonMessage := JSONMessage{
-				Type: HANDLER_SEND_REQUEST,
+			requestSlice := make([]*http.Request, 1)
+			requestSlice[0] = request
+			jsonMessage := RequestMessage{
+				Type:    HANDLER_SEND_REQUEST,
+				Request: request,
 			}
 			message, err := json.Marshal(jsonMessage)
 			if err != nil {
@@ -151,8 +163,61 @@ func (this *Node) DistributeRequest() {
 	}
 }
 
-// result of crawl request
-// if
-func (this *Node) AcceptResult(jsonMessage *JSONMessage) {
+// report result of request to master
+func (this *Node) ReportToMaster(result *crawler.ScrapeResult) {
+	requestMessage := &RequestMessage{
+		Type:            HANDLER_SEND_REQUEST_RESULT,
+		Request:         result.Request,
+		CrawlResult:     result.CrawlResult,
+		ScrapedRequests: result.ScrapedRequests,
+		NodeInfo:        this.NodeInfo,
+	}
+	if this.Cluster.IsMasterNode() {
+		this.AcceptResult(requestMessage)
+		return
+	}
+	message, err := json.Marshal(requestMessage)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	this.Transporter.SendMessageToNode(this.Cluster.GetMasterName(), string(message))
+}
 
+// result of crawl request
+// tell cluster request is down
+// add scraped request to cluster
+// close if cluster has no further request and running request
+func (this *Node) AcceptResult(responseMessage *RequestMessage) {
+	this.Cluster.Crawled(responseMessage.Request.NodeName, responseMessage.Request.UniqueName)
+	if len(responseMessage.ScrapedRequests) > 0 {
+		for _, request := range responseMessage.ScrapedRequests {
+			this.Cluster.AddRequest(request)
+		}
+	}
+	if this.Cluster.IsStop() {
+		this.CloseAllNode()
+	}
+}
+
+// close all node
+func (this *Node) CloseAllNode() {
+	requestMessage := &RequestMessage{}
+	requestMessage.Type = HANDLER_STOP_NODE
+	json, _ := json.Marshal(requestMessage)
+	message := string(json)
+	for _, nodeInfo := range this.Cluster.ClusterInfo.NodeList {
+		if nodeInfo.Name == this.NodeInfo.Name {
+			this.StopCrawl()
+			continue
+		}
+		this.Transporter.SendMessageToNode(nodeInfo.Name, message)
+	}
+}
+
+// stop all crawl job
+func (this *Node) StopCrawl() {
+	this.Crawler.StopSpider()
+	this.Distributer.Stop()
+	this.Reporter.Stop()
 }

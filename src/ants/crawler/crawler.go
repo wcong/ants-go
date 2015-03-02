@@ -29,12 +29,12 @@ type StartSpiderResult struct {
 	Time    string
 }
 
-func NewCrawler() *Crawler {
+func NewCrawler(resultQuene *ResultQuene) *Crawler {
 	requestQuene := NewRequestQuene()
 	responseQuene := NewResponseQuene()
 	spiderMap := make(map[string]*base_spider.Spider)
 	downloader := NewDownloader(requestQuene, responseQuene)
-	scraper := NewScraper(requestQuene, responseQuene, spiderMap)
+	scraper := NewScraper(resultQuene, responseQuene, spiderMap)
 	crawler := Crawler{spiderMap, CrawlerStatus{}, requestQuene, responseQuene, downloader, scraper}
 	return &crawler
 }
@@ -72,12 +72,17 @@ func (this *Crawler) RunSpider() {
 	go this.Scraper.Start()
 }
 
-func (this *Crawler) ParseSpider() {
+func (this *Crawler) PauseSpider() {
 	this.Downloader.Pause()
 	this.Scraper.Pause()
 }
 
-func (this *Crawler) UnParseSpider() {
+func (this *Crawler) UnPauseSpider() {
 	this.Downloader.UnPause()
 	this.Scraper.UnPause()
+}
+
+func (this *Crawler) StopSpider() {
+	this.Downloader.Stop()
+	this.Scraper.Stop()
 }

@@ -9,5 +9,9 @@ import (
 func TestRequest(t *testing.T) {
 	request, _ := NewRequest("GET", "http://www.baidu.com", "a", "a", nil, 1)
 	message, _ := json.Marshal(request)
-	fmt.Println(string(message))
+	msg := string(message)
+	//fmt.Println(msg)
+	parsedRequest := &Request{}
+	json.Unmarshal([]byte(msg), parsedRequest)
+	fmt.Println(parsedRequest.GoRequest.Host)
 }
