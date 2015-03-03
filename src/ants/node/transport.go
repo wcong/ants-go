@@ -32,6 +32,7 @@ type Transporter struct {
 }
 
 // init a transporter
+// register handle of tcp request
 func NewTransporter(settings *util.Settings, node *Node) *Transporter {
 	portString := strconv.Itoa(settings.TcpPort)
 	ln, err := net.Listen("tcp", ":"+portString)
@@ -83,7 +84,6 @@ func (this *Transporter) Start() {
 // loop tcp server
 func (this *Transporter) acceptRequest() {
 	for {
-		log.Println("loop")
 		conn, err := this.TcpServer.Accept()
 		if err != nil {
 			log.Fatal(err)
@@ -95,13 +95,14 @@ func (this *Transporter) acceptRequest() {
 		}
 		data := string(buf)
 		this.handleMessage(data, conn)
+		go this.ClientReader(conn)
 	}
 }
 
 // deap loop linsten client connection
 func (this *Transporter) ClientReader(conn net.Conn) {
-	buffer := make([]byte, 2048)
 	for {
+		buffer := make([]byte, 2048)
 		_, redErr := conn.Read(buffer)
 		if redErr != nil {
 			time.Sleep(1 * time.Second)
@@ -142,6 +143,9 @@ func (this *Transporter) handleMessage(data string, conn net.Conn) {
 		for _, jsonString := range splitString {
 			var jsonMessage RequestMessage
 			jsonString = strings.Trim(jsonString, "\x00")
+			if len(jsonString) == 0 {
+				continue
+			}
 			log.Println(jsonString)
 			err := json.Unmarshal([]byte(jsonString), &jsonMessage)
 			if err != nil {
@@ -194,7 +198,6 @@ func (this *Transporter) handlerJoinResponse(jsonMessage *RequestMessage, conn n
 	this.Node.AddNodeToCluster(jsonMessage.NodeInfo)
 }
 func (this *Transporter) handlerSendRequest(jsonMessage *RequestMessage, conn net.Conn) {
-	log.Println("get request" + jsonMessage.Request.UniqueName)
 	this.Node.AcceptRequest(jsonMessage.Request)
 }
 func (this *Transporter) handlerSendRequestResult(jsonMessage *RequestMessage, conn net.Conn) {
