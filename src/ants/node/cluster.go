@@ -28,7 +28,7 @@ type ClusterInfo struct {
 // recive basic request and record crawled requets
 type RequestStatus struct {
 	CrawledMap   map[string]int
-	CrawlingMap  map[string]map[uint64]*http.Request
+	CrawlingMap  map[string]map[string]*http.Request
 	WaitingQuene *crawler.RequestQuene
 }
 
@@ -41,7 +41,7 @@ func NewCluster(settings *util.Settings, localNode *NodeInfo) *Cluster {
 	clusterInfo := &ClusterInfo{settings.Name, make([]*NodeInfo, 0), localNode, localNode}
 	requestStatus := &RequestStatus{}
 	requestStatus.CrawledMap = make(map[string]int)
-	requestStatus.CrawlingMap = make(map[string]map[uint64]*http.Request)
+	requestStatus.CrawlingMap = make(map[string]map[string]*http.Request)
 	requestStatus.WaitingQuene = crawler.NewRequestQuene()
 	cluster := &Cluster{clusterInfo, requestStatus}
 	cluster.ClusterInfo.NodeList = append(cluster.ClusterInfo.NodeList, localNode)
@@ -64,6 +64,11 @@ func (this *Cluster) AddNode(nodeInfo *NodeInfo) {
 // choose a new master node
 func (this *Cluster) ElectMaster() *NodeInfo {
 	this.ClusterInfo.MasterNode = this.ClusterInfo.NodeList[0]
+	for _, node := range this.ClusterInfo.NodeList {
+		if this.ClusterInfo.MasterNode.Name > node.Name {
+			this.ClusterInfo.MasterNode = node
+		}
+	}
 	return this.ClusterInfo.MasterNode
 }
 
@@ -77,7 +82,7 @@ func (this *Cluster) PopRequest() *http.Request {
 func (this *Cluster) AddToCrawlingQuene(request *http.Request) {
 	requestMap, ok := this.RequestStatus.CrawlingMap[request.NodeName]
 	if !ok {
-		requestMap = make(map[uint64]*http.Request)
+		requestMap = make(map[string]*http.Request)
 		this.RequestStatus.CrawlingMap[request.NodeName] = requestMap
 	}
 	requestMap[request.UniqueName] = request
@@ -86,7 +91,7 @@ func (this *Cluster) AddToCrawlingQuene(request *http.Request) {
 // a request job is done
 // delete it from crawling quene
 // add crawled num
-func (this *Cluster) Crawled(nodeName string, requestHashName uint64) {
+func (this *Cluster) Crawled(nodeName, requestHashName string) {
 	requestMap, ok := this.RequestStatus.CrawlingMap[nodeName]
 	if !ok {
 		log.Println("none node :" + nodeName)

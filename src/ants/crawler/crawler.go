@@ -60,14 +60,14 @@ func (this *Crawler) StartSpider(spiderName string) *StartSpiderResult {
 	for _, request := range startRequests {
 		this.RequestQuene.Push(request)
 	}
-	this.RunSpider()
+	this.Start()
 	result.Success = true
 	result.Message = "started spider"
 	result.Spider = spider.Name
 	return result
 }
 
-func (this *Crawler) RunSpider() {
+func (this *Crawler) Start() {
 	go this.Downloader.Start()
 	go this.Scraper.Start()
 }

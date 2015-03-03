@@ -48,6 +48,9 @@ func (this *Reporter) IsStop() bool {
 	return this.Status == REPORT_STATUS_STOP
 }
 
+// pop result quene
+// if scraped new request  set node name local node name
+// send it to master
 func (this *Reporter) Run() {
 	for {
 		if this.Status == REPORT_STATUS_PAUSE {
@@ -58,7 +61,15 @@ func (this *Reporter) Run() {
 			break
 		}
 		result := this.ResultQuene.Pop()
-		if result != nil {
+		if result == nil {
+			time.Sleep(1 * time.Second)
+			continue
+		}
+		nodeName := this.Node.NodeInfo.Name
+		if result.ScrapedRequests != nil {
+			for _, request := range result.ScrapedRequests {
+				request.NodeName = nodeName
+			}
 			this.Node.ReportToMaster(result)
 		} else {
 			time.Sleep(1 * time.Second)

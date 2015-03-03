@@ -4,6 +4,7 @@ import (
 	"ants/util"
 	"io"
 	Http "net/http"
+	"strconv"
 )
 
 /*
@@ -17,7 +18,7 @@ what a request would do
 type Request struct {
 	GoRequest  *Http.Request
 	CookieJar  int
-	UniqueName uint64
+	UniqueName string
 	SpiderName string
 	ParserName string
 	NodeName   string
@@ -44,7 +45,7 @@ func (this *Request) makeUniqueName() {
 	baseString += ":" + this.GoRequest.Method
 	baseString += ":" + this.GoRequest.URL.String()
 	baseString += ":" + this.GoRequest.Form.Encode()
-	this.UniqueName = util.HashString(baseString)
+	this.UniqueName = strconv.FormatUint(util.HashString(baseString), 10)
 }
 
 func (this *Request) SetNodeName(nodeName string) {

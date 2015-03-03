@@ -43,7 +43,11 @@ func NewTransporter(settings *util.Settings, node *Node) *Transporter {
 	handleMap := make(map[int]func(*RequestMessage, net.Conn))
 	transporter := &Transporter{settings, ln, connMap, handleMap, "", node}
 	transporter.HandleMap[HADNLER_JOIN_REQUEST] = transporter.handlerJoinRequest
+	transporter.HandleMap[HADNLER_JOIN_RESPONSE] = transporter.handlerJoinResponse
 	transporter.HandleMap[HANDLER_SEND_MASTER_REQUEST] = transporter.handlerSendMasterRequest
+	transporter.HandleMap[HANDLER_SEND_REQUEST] = transporter.handlerSendRequest
+	transporter.HandleMap[HANDLER_SEND_REQUEST_RESULT] = transporter.handlerSendRequestResult
+	transporter.HandleMap[HANDLER_STOP_NODE] = transporter.handlerStopNode
 	return transporter
 }
 
@@ -118,26 +122,30 @@ func (this *Transporter) ClientReader(conn net.Conn) {
 func (this *Transporter) handleMessage(data string, conn net.Conn) {
 	log.Println("get data:" + data)
 	if this.ServerTmpString != "" {
-		data += this.ServerTmpString
+		data = this.ServerTmpString + data
 		this.ServerTmpString = ""
 	}
 	if !strings.HasSuffix(data, TCP_EDN_SIGN) {
 		lastIndex := strings.LastIndex(data, TCP_EDN_SIGN)
 		if lastIndex >= 0 {
-			this.ServerTmpString = data[lastIndex:]
+			this.ServerTmpString = data[lastIndex+len(TCP_EDN_SIGN):]
 			data = data[:lastIndex]
 		} else {
 			this.ServerTmpString = data
 			data = ""
 		}
+	} else {
+		this.ServerTmpString = ""
 	}
 	if len(data) > 0 {
 		splitString := strings.Split(data, TCP_EDN_SIGN)
 		for _, jsonString := range splitString {
 			var jsonMessage RequestMessage
+			jsonString = strings.Trim(jsonString, "\x00")
+			log.Println(jsonString)
 			err := json.Unmarshal([]byte(jsonString), &jsonMessage)
 			if err != nil {
-				log.Println(err)
+				log.Panicln(err)
 			} else {
 				go this.HandleMap[jsonMessage.Type](&jsonMessage, conn)
 			}
@@ -157,22 +165,43 @@ func (this *Transporter) SendMessage(conn net.Conn, message string) {
 	if strings.Contains(message, TCP_EDN_SIGN) {
 		message = strings.Replace(message, TCP_EDN_SIGN, TCP_EDN_SIGN_REPLACE, -1)
 	}
+	log.Println("send message:" + message)
 	transport.SendMessage(conn, message+TCP_EDN_SIGN)
 }
 
 // what if some node what to join
 func (this *Transporter) handlerJoinRequest(jsonMessage *RequestMessage, conn net.Conn) {
-	if jsonMessage.NodeInfo.Ip != "" {
-		log.Println("get node join request:ip:" + jsonMessage.NodeInfo.Ip + ";port:" + strconv.Itoa(jsonMessage.NodeInfo.Port))
-		nodeInfo := jsonMessage.NodeInfo
-		if _, ok := this.ConnMap[nodeInfo.Name]; !ok {
-			this.ConnMap[nodeInfo.Name] = conn
-		}
-		this.Node.AddNodeToCluster(nodeInfo)
+	log.Println("get node join request:ip:" + jsonMessage.NodeInfo.Ip + ";port:" + strconv.Itoa(jsonMessage.NodeInfo.Port))
+	nodeInfo := jsonMessage.NodeInfo
+	this.ConnMap[nodeInfo.Name] = conn
+	this.Node.AddNodeToCluster(nodeInfo)
+	response := &RequestMessage{
+		Type:     HADNLER_JOIN_RESPONSE,
+		NodeInfo: this.Node.NodeInfo,
 	}
+	message, _ := json.Marshal(response)
+	this.SendMessage(conn, string(message))
 }
 
 // deal with send master request,old master node elect new master node ,and send it to all node
 func (this *Transporter) handlerSendMasterRequest(jsonMessage *RequestMessage, conn net.Conn) {
 	this.Node.AddMasterNode(jsonMessage.NodeInfo)
+	this.ConnMap[jsonMessage.NodeInfo.Name] = conn
 }
+
+func (this *Transporter) handlerJoinResponse(jsonMessage *RequestMessage, conn net.Conn) {
+	this.ConnMap[jsonMessage.NodeInfo.Name] = conn
+	this.Node.AddNodeToCluster(jsonMessage.NodeInfo)
+}
+func (this *Transporter) handlerSendRequest(jsonMessage *RequestMessage, conn net.Conn) {
+	log.Println("get request" + jsonMessage.Request.UniqueName)
+	this.Node.AcceptRequest(jsonMessage.Request)
+}
+func (this *Transporter) handlerSendRequestResult(jsonMessage *RequestMessage, conn net.Conn) {
+	this.Node.AcceptResult(jsonMessage)
+}
+func (this *Transporter) handlerStopNode(jsonMessage *RequestMessage, conn net.Conn) {
+	this.Node.StopCrawl()
+}
+
+// TODO when connect lost

@@ -8,7 +8,6 @@ import (
 	"log"
 	"strconv"
 	"sync"
-	"time"
 )
 
 /*
@@ -64,7 +63,7 @@ func (this *Node) Init() {
 	this.HttpServer = http.NewHttpServer(this.Settings, router)
 	transporter := NewTransporter(this.Settings, this)
 	this.Transporter = transporter
-	this.Distributer = NewDistributer(this.Cluster)
+	this.Distributer = NewDistributer(this.Cluster, this)
 }
 
 // start to server
@@ -82,21 +81,21 @@ func (this *Node) Start() {
 // if this is master node,elect a new master node and send it to other
 func (this *Node) AddNodeToCluster(nodeInfo *NodeInfo) {
 	this.Cluster.AddNode(nodeInfo)
-	if this.Cluster.ClusterInfo.LocalNode == this.Cluster.ClusterInfo.MasterNode {
-		masterNode := this.Cluster.ElectMaster()
-		jsonMessage := RequestMessage{
-			Type:     HANDLER_SEND_MASTER_REQUEST,
-			NodeInfo: masterNode,
-		}
-		json, _ := json.Marshal(jsonMessage)
-		message := string(json)
-		for _, nodeInfo := range this.Cluster.ClusterInfo.NodeList {
-			if nodeInfo.Name == this.NodeInfo.Name {
-				continue
-			}
-			this.Transporter.SendMessageToNode(nodeInfo.Name, message)
-		}
-	}
+	//if this.Cluster.ClusterInfo.LocalNode == this.Cluster.ClusterInfo.MasterNode {
+	//	masterNode := this.Cluster.ElectMaster()
+	//	jsonMessage := RequestMessage{
+	//		Type:     HANDLER_SEND_MASTER_REQUEST,
+	//		NodeInfo: masterNode,
+	//	}
+	//	json, _ := json.Marshal(jsonMessage)
+	//	message := string(json)
+	//	for _, nodeInfo := range this.Cluster.ClusterInfo.NodeList {
+	//		if nodeInfo.Name == this.NodeInfo.Name {
+	//			continue
+	//		}
+	//		this.Transporter.SendMessageToNode(nodeInfo.Name, message)
+	//	}
+	//}
 }
 
 // slave node get request of master node info then change the master node
@@ -114,8 +113,7 @@ func (this *Node) AddMasterNode(masterNodeInfo *NodeInfo) {
 func (this *Node) StartSpider(spiderName string) *crawler.StartSpiderResult {
 	result := this.Crawler.StartSpider(spiderName)
 	if result.Success && this.Distributer.IsStop() {
-		this.Distributer.Run()
-		go this.DistributeRequest()
+		go this.Distributer.Start()
 	}
 	if result.Success && this.Reporter.IsStop() {
 		go this.Reporter.Start()
@@ -123,42 +121,40 @@ func (this *Node) StartSpider(spiderName string) *crawler.StartSpiderResult {
 	return result
 }
 
-// dead loop cluster pop request
+// start dead loop for all job
+func (this *Node) StartCrawl() {
+	go this.Distributer.Start()
+	go this.Reporter.Start()
+	go this.Crawler.Start()
+}
+
+// get distribute request
+// if node not running ,start it
+func (this *Node) AcceptRequest(request *http.Request) {
+	this.Crawler.Downloader.RequestQuene.Push(request)
+	this.StartCrawl()
+}
+
 // distribute request to every node
 // judge node
 // tell cluster where is the request
-func (this *Node) DistributeRequest() {
-	for {
-		if this.Distributer.IsStop() {
-			break
+func (this *Node) DistributeRequest(request *http.Request) {
+	if request.NodeName == this.NodeInfo.Name {
+		this.Crawler.RequestQuene.Push(request)
+		this.Cluster.AddToCrawlingQuene(request)
+	} else {
+		requestSlice := make([]*http.Request, 1)
+		requestSlice[0] = request
+		jsonMessage := RequestMessage{
+			Type:    HANDLER_SEND_REQUEST,
+			Request: request,
 		}
-		if this.Distributer.IsPause() {
-			time.Sleep(1 * time.Second)
-			continue
-		}
-		request := this.Cluster.PopRequest()
-		if request == nil {
-			time.Sleep(1 * time.Second)
-			continue
-		}
-		nodeName := this.Distributer.Distribute(request)
-		if nodeName == this.NodeInfo.Name {
-			this.Crawler.RequestQuene.Push(request)
-			this.Cluster.AddToCrawlingQuene(request)
+		message, err := json.Marshal(jsonMessage)
+		if err != nil {
+			log.Println(err)
 		} else {
-			requestSlice := make([]*http.Request, 1)
-			requestSlice[0] = request
-			jsonMessage := RequestMessage{
-				Type:    HANDLER_SEND_REQUEST,
-				Request: request,
-			}
-			message, err := json.Marshal(jsonMessage)
-			if err != nil {
-				log.Println(err)
-			} else {
-				this.Transporter.SendMessageToNode(nodeName, string(message))
-				this.Cluster.AddToCrawlingQuene(request)
-			}
+			this.Transporter.SendMessageToNode(request.NodeName, string(message))
+			this.Cluster.AddToCrawlingQuene(request)
 		}
 	}
 }
@@ -178,7 +174,7 @@ func (this *Node) ReportToMaster(result *crawler.ScrapeResult) {
 	}
 	message, err := json.Marshal(requestMessage)
 	if err != nil {
-		log.Println(err)
+		log.Panic(err)
 		return
 	}
 	this.Transporter.SendMessageToNode(this.Cluster.GetMasterName(), string(message))

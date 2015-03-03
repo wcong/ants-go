@@ -67,7 +67,7 @@ func (this *Downloader) Download() {
 		client := this.ClientList[0]
 		response, err := client.GoClient.Do(request.GoRequest)
 		if err != nil {
-			log.Fatal(err)
+			log.Println(err)
 		}
 		Response := http.NewResponse(response, request, request.SpiderName, request.ParserName, request.NodeName)
 		this.ResponseQuene.Push(Response)
