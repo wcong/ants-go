@@ -7,6 +7,7 @@ import (
 const (
 	HADNLER_JOIN_REQUEST = iota
 	HADNLER_JOIN_RESPONSE
+	HADNLER_JOIN_EXAM // all node fix node list and master node
 	HANDLER_SEND_MASTER_REQUEST
 	HANDLER_SEND_REQUEST
 	HANDLER_SEND_REQUEST_RESULT
@@ -25,4 +26,5 @@ type RequestMessage struct {
 	CrawlResult     string // if success just empty string,or error reason
 	ScrapedRequests []*http.Request
 	NodeInfo        *NodeInfo
+	ClusterInfo     *ClusterInfo
 }

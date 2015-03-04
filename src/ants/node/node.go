@@ -3,10 +3,12 @@ package node
 import (
 	"ants/crawler"
 	"ants/http"
+	"ants/transport"
 	"ants/util"
 	"encoding/json"
 	"log"
 	"strconv"
+	"strings"
 	"sync"
 )
 
@@ -32,10 +34,11 @@ type NodeInfo struct {
 type Node struct {
 	NodeInfo    *NodeInfo
 	Settings    *util.Settings
-	Crawler     *crawler.Crawler
+	Cluster     *Cluster
 	HttpServer  *http.HttpServer
 	Transporter *Transporter
-	Cluster     *Cluster
+	// those conpoment maybe stop
+	Crawler     *crawler.Crawler
 	Distributer *Distributer
 	Reporter    *Reporter
 }
@@ -73,6 +76,7 @@ func (this *Node) Start() {
 	go this.HttpServer.Start(wg)
 	this.Transporter.Start()
 	log.Println("ok,we are ready")
+	this.JoinNode()
 	wg.Wait()
 	log.Println("shutting down,goods bye")
 }
@@ -81,21 +85,6 @@ func (this *Node) Start() {
 // if this is master node,elect a new master node and send it to other
 func (this *Node) AddNodeToCluster(nodeInfo *NodeInfo) {
 	this.Cluster.AddNode(nodeInfo)
-	//if this.Cluster.ClusterInfo.LocalNode == this.Cluster.ClusterInfo.MasterNode {
-	//	masterNode := this.Cluster.ElectMaster()
-	//	jsonMessage := RequestMessage{
-	//		Type:     HANDLER_SEND_MASTER_REQUEST,
-	//		NodeInfo: masterNode,
-	//	}
-	//	json, _ := json.Marshal(jsonMessage)
-	//	message := string(json)
-	//	for _, nodeInfo := range this.Cluster.ClusterInfo.NodeList {
-	//		if nodeInfo.Name == this.NodeInfo.Name {
-	//			continue
-	//		}
-	//		this.Transporter.SendMessageToNode(nodeInfo.Name, message)
-	//	}
-	//}
 }
 
 // slave node get request of master node info then change the master node
@@ -119,13 +108,6 @@ func (this *Node) StartSpider(spiderName string) *crawler.StartSpiderResult {
 		go this.Reporter.Start()
 	}
 	return result
-}
-
-// start dead loop for all job
-func (this *Node) StartCrawl() {
-	go this.Distributer.Start()
-	go this.Reporter.Start()
-	go this.Crawler.Start()
 }
 
 // get distribute request
@@ -216,4 +198,79 @@ func (this *Node) StopCrawl() {
 	this.Crawler.StopSpider()
 	this.Distributer.Stop()
 	this.Reporter.Stop()
+}
+
+// start dead loop for all job
+func (this *Node) StartCrawl() {
+	go this.Distributer.Start()
+	go this.Reporter.Start()
+	go this.Crawler.Start()
+}
+
+// pause crawl
+func (this *Node) PauseCrawl() {
+	this.Distributer.Pause()
+	this.Reporter.Pause()
+	this.Crawler.Pause()
+}
+
+// unpause crawl
+func (this *Node) UnpauseCrawl() {
+	this.Distributer.Unpause()
+	this.Reporter.Unpause()
+	this.Crawler.UnPause()
+}
+
+// join node
+// if cluster exist
+//		send join request only
+// else
+//		make it self master,make node ready for crawl job
+func (this *Node) JoinNode() {
+	this.Cluster.ClusterInfo.Status = CLUSTER_STATUS_JOIN
+	isClusterExist := false
+	if len(this.Settings.NodeList) > 0 {
+		for _, nodeInfo := range this.Settings.NodeList {
+			nodeSettings := strings.Split(nodeInfo, ":")
+			ip := nodeSettings[0]
+			port, _ := strconv.Atoi(nodeSettings[1])
+			if ip == this.NodeInfo.Ip && port == this.NodeInfo.Port {
+				continue
+			}
+			isClusterExist = this.sendJoinRequest(ip, port)
+		}
+	}
+	if !isClusterExist {
+		this.Cluster.MakeMasterNode(this.NodeInfo.Name)
+		this.Cluster.ClusterInfo.Status = CLUSTER_STATUS_READY
+	}
+}
+
+func (this *Node) sendJoinRequest(ip string, port int) bool {
+	isNodeExist := false
+	conn, err := transport.InitClient(ip, port)
+	if err != nil {
+		log.Println(err)
+	} else {
+		isNodeExist = true
+		go this.Transporter.ClientReader(conn)
+		jsonMessage := RequestMessage{
+			Type:        HADNLER_JOIN_REQUEST,
+			NodeInfo:    this.NodeInfo,
+			ClusterInfo: this.Cluster.ClusterInfo,
+		}
+		message, _ := json.Marshal(jsonMessage)
+		this.Transporter.SendMessage(conn, string(message))
+	}
+	return isNodeExist
+}
+
+func (this *Node) Join() {
+	this.Cluster.Join()
+	this.PauseCrawl()
+}
+
+func (this *Node) Ready() {
+	this.Cluster.Ready()
+	this.UnpauseCrawl()
 }

@@ -5,6 +5,7 @@ import (
 	"ants/http"
 	"ants/util"
 	"log"
+	"sync"
 )
 
 /*
@@ -17,15 +18,28 @@ what a cluster would do
 *	add a request
 */
 
+// cluster status
+// *		init:where every thing have init
+// *		join:try to connect to other node ,if not make itself master,else ,get other master
+// *		election(option):when circle is builded a start to elect a master
+// * 	ready:ready to start crawl
+const (
+	CLUSTER_STATUS_INIT = iota
+	CLUSTER_STATUS_JOIN
+	CLUSTER_STATUS_ELECTION
+	CLUSTER_STATUS_READY
+)
+
 // basic cluster infomation
 type ClusterInfo struct {
+	Status     int
 	Name       string
 	NodeList   []*NodeInfo
 	LocalNode  *NodeInfo
 	MasterNode *NodeInfo
 }
 
-// recive basic request and record crawled requets
+// receive basic request and record crawled requets
 type RequestStatus struct {
 	CrawledMap   map[string]int
 	CrawlingMap  map[string]map[string]*http.Request
@@ -35,29 +49,46 @@ type RequestStatus struct {
 type Cluster struct {
 	ClusterInfo   *ClusterInfo
 	RequestStatus *RequestStatus
+	mutex         *sync.Mutex
 }
 
 func NewCluster(settings *util.Settings, localNode *NodeInfo) *Cluster {
-	clusterInfo := &ClusterInfo{settings.Name, make([]*NodeInfo, 0), localNode, localNode}
+	clusterInfo := &ClusterInfo{CLUSTER_STATUS_INIT, settings.Name, make([]*NodeInfo, 0), localNode, nil}
 	requestStatus := &RequestStatus{}
 	requestStatus.CrawledMap = make(map[string]int)
 	requestStatus.CrawlingMap = make(map[string]map[string]*http.Request)
 	requestStatus.WaitingQuene = crawler.NewRequestQuene()
-	cluster := &Cluster{clusterInfo, requestStatus}
+	cluster := &Cluster{clusterInfo, requestStatus, new(sync.Mutex)}
 	cluster.ClusterInfo.NodeList = append(cluster.ClusterInfo.NodeList, localNode)
 	return cluster
 }
 
 // is local node master node
 func (this *Cluster) IsMasterNode() bool {
+	if this.ClusterInfo.MasterNode == nil {
+		return false
+	}
 	return this.ClusterInfo.LocalNode.Name == this.ClusterInfo.MasterNode.Name
 }
 
 // add a node to cluster node list
 func (this *Cluster) AddNode(nodeInfo *NodeInfo) {
+	this.mutex.Lock()
+	defer this.mutex.Unlock()
+	for _, node := range this.ClusterInfo.NodeList {
+		if node.Name == nodeInfo.Name {
+			return
+		}
+	}
 	this.ClusterInfo.NodeList = append(this.ClusterInfo.NodeList, nodeInfo)
-	if this.ClusterInfo.LocalNode == this.ClusterInfo.MasterNode {
-		this.ElectMaster()
+}
+
+// make master node by node name
+func (this *Cluster) MakeMasterNode(nodeName string) {
+	for _, node := range this.ClusterInfo.NodeList {
+		if node.Name == nodeName {
+			this.ClusterInfo.MasterNode = node
+		}
 	}
 }
 
@@ -121,4 +152,25 @@ func (this *Cluster) IsStop() bool {
 		}
 	}
 	return true
+}
+
+func (this *Cluster) HasNode(nodeName string) bool {
+	for _, node := range this.ClusterInfo.NodeList {
+		if node.Name == nodeName {
+			return true
+		}
+	}
+	return false
+}
+
+// is cluster ready for crawl
+func (this *Cluster) IsReady() bool {
+	return this.ClusterInfo.Status == CLUSTER_STATUS_READY
+}
+
+func (this *Cluster) Ready() {
+	this.ClusterInfo.Status = CLUSTER_STATUS_READY
+}
+func (this *Cluster) Join() {
+	this.ClusterInfo.Status = CLUSTER_STATUS_JOIN
 }

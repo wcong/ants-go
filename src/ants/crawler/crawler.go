@@ -72,12 +72,12 @@ func (this *Crawler) Start() {
 	go this.Scraper.Start()
 }
 
-func (this *Crawler) PauseSpider() {
+func (this *Crawler) Pause() {
 	this.Downloader.Pause()
 	this.Scraper.Pause()
 }
 
-func (this *Crawler) UnPauseSpider() {
+func (this *Crawler) UnPause() {
 	this.Downloader.UnPause()
 	this.Scraper.UnPause()
 }

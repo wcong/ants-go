@@ -44,10 +44,14 @@ func (this *Scraper) Stop() {
 	this.Status = SCRAPY_STATUS_STOP
 }
 func (this *Scraper) Pause() {
-	this.Status = SCRAPY_STATUS_PAUSE
+	if this.Status == SCRAPY_STATUS_RUNING {
+		this.Status = SCRAPY_STATUS_PAUSE
+	}
 }
 func (this *Scraper) UnPause() {
-	this.Status = SCRAPY_STATUS_RUNING
+	if this.Status == SCRAPY_STATUS_PAUSE {
+		this.Status = SCRAPY_STATUS_RUNING
+	}
 }
 
 // dead loop for scrapy

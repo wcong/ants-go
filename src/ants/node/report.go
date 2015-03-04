@@ -37,7 +37,15 @@ func (this *Reporter) Start() {
 }
 
 func (this *Reporter) Pause() {
-	this.Status = REPORT_STATUS_PAUSE
+	if this.Status == REPORT_STATUS_RUNNING {
+		this.Status = REPORT_STATUS_PAUSE
+	}
+}
+
+func (this *Reporter) Unpause() {
+	if this.Status == REPORT_STATUS_PAUSE {
+		this.Status = REPORT_STATUS_RUNNING
+	}
 }
 
 func (this *Reporter) Stop() {

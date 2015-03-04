@@ -49,6 +49,7 @@ func NewTransporter(settings *util.Settings, node *Node) *Transporter {
 	transporter.HandleMap[HANDLER_SEND_REQUEST] = transporter.handlerSendRequest
 	transporter.HandleMap[HANDLER_SEND_REQUEST_RESULT] = transporter.handlerSendRequestResult
 	transporter.HandleMap[HANDLER_STOP_NODE] = transporter.handlerStopNode
+	transporter.HandleMap[HADNLER_JOIN_EXAM] = transporter.handleJoinExam
 	return transporter
 }
 
@@ -57,28 +58,6 @@ func NewTransporter(settings *util.Settings, node *Node) *Transporter {
 // connect to server and send join request
 func (this *Transporter) Start() {
 	go this.acceptRequest()
-	if len(this.Settings.NodeList) > 0 {
-		for _, nodeInfo := range this.Settings.NodeList {
-			nodeSettings := strings.Split(nodeInfo, ":")
-			ip := nodeSettings[0]
-			port, _ := strconv.Atoi(nodeSettings[1])
-			if ip == this.Node.NodeInfo.Ip && port == this.Node.NodeInfo.Port {
-				continue
-			}
-			conn, err := transport.InitClient(ip, port)
-			if err != nil {
-				log.Println(err)
-			} else {
-				go this.ClientReader(conn)
-				jsonMessage := RequestMessage{
-					Type:     HADNLER_JOIN_REQUEST,
-					NodeInfo: this.Node.NodeInfo,
-				}
-				message, _ := json.Marshal(jsonMessage)
-				this.SendMessage(conn, string(message))
-			}
-		}
-	}
 }
 
 // loop tcp server
@@ -174,17 +153,44 @@ func (this *Transporter) SendMessage(conn net.Conn, message string) {
 }
 
 // what if some node what to join
+// if I have this node ignore
+// if this is not master ,
+//	just  cluster info back,let it talk to master node
+// else add node to cluster ,and send it to all node
 func (this *Transporter) handlerJoinRequest(jsonMessage *RequestMessage, conn net.Conn) {
+	if this.Node.Cluster.HasNode(jsonMessage.NodeInfo.Name) {
+		return
+	}
 	log.Println("get node join request:ip:" + jsonMessage.NodeInfo.Ip + ";port:" + strconv.Itoa(jsonMessage.NodeInfo.Port))
 	nodeInfo := jsonMessage.NodeInfo
 	this.ConnMap[nodeInfo.Name] = conn
-	this.Node.AddNodeToCluster(nodeInfo)
-	response := &RequestMessage{
-		Type:     HADNLER_JOIN_RESPONSE,
-		NodeInfo: this.Node.NodeInfo,
+	if this.Node.Cluster.IsMasterNode() {
+		this.Node.Join()
+		this.Node.AddNodeToCluster(nodeInfo)
+		response := &RequestMessage{
+			Type:        HADNLER_JOIN_EXAM,
+			NodeInfo:    this.Node.NodeInfo,
+			ClusterInfo: this.Node.Cluster.ClusterInfo,
+		}
+		jsonMessage, _ := json.Marshal(response)
+		message := string(jsonMessage)
+		for _, node := range this.Node.Cluster.ClusterInfo.NodeList {
+			if node.Name == this.Node.NodeInfo.Name {
+				continue
+			}
+			this.SendMessageToNode(node.Name, message)
+		}
+		this.Node.Ready()
+	} else {
+		response := &RequestMessage{
+			Type:        HADNLER_JOIN_RESPONSE,
+			NodeInfo:    this.Node.NodeInfo,
+			ClusterInfo: this.Node.Cluster.ClusterInfo,
+		}
+		message, _ := json.Marshal(response)
+		this.SendMessage(conn, string(message))
 	}
-	message, _ := json.Marshal(response)
-	this.SendMessage(conn, string(message))
+
 }
 
 // deal with send master request,old master node elect new master node ,and send it to all node
@@ -193,9 +199,17 @@ func (this *Transporter) handlerSendMasterRequest(jsonMessage *RequestMessage, c
 	this.ConnMap[jsonMessage.NodeInfo.Name] = conn
 }
 
+// for the node send join request  to salve node,
+// slave node will send those request
+// it will judge to send join request to master node
 func (this *Transporter) handlerJoinResponse(jsonMessage *RequestMessage, conn net.Conn) {
 	this.ConnMap[jsonMessage.NodeInfo.Name] = conn
 	this.Node.AddNodeToCluster(jsonMessage.NodeInfo)
+	masterNode := jsonMessage.ClusterInfo.MasterNode
+	if this.Node.Cluster.HasNode(masterNode.Name) && this.Node.Cluster.GetMasterName() == masterNode.Name {
+		return
+	}
+	this.Node.sendJoinRequest(masterNode.Ip, masterNode.Port)
 }
 func (this *Transporter) handlerSendRequest(jsonMessage *RequestMessage, conn net.Conn) {
 	this.Node.AcceptRequest(jsonMessage.Request)
@@ -207,4 +221,20 @@ func (this *Transporter) handlerStopNode(jsonMessage *RequestMessage, conn net.C
 	this.Node.StopCrawl()
 }
 
-// TODO when connect lost
+// master node do not care this message
+// slave node add node list and assign master node
+func (this *Transporter) handleJoinExam(jsonMessage *RequestMessage, conn net.Conn) {
+	if this.Node.Cluster.IsMasterNode() {
+		return
+	}
+	remoteNode := jsonMessage.NodeInfo
+	if _, ok := this.ConnMap[remoteNode.Name]; !ok {
+		this.ConnMap[remoteNode.Name] = conn
+	}
+	this.Node.Join()
+	for _, node := range jsonMessage.ClusterInfo.NodeList {
+		this.Node.AddNodeToCluster(node)
+	}
+	this.Node.Cluster.MakeMasterNode(jsonMessage.ClusterInfo.MasterNode.Name)
+	this.Node.Ready()
+}

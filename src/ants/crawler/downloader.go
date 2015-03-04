@@ -39,10 +39,14 @@ func (this *Downloader) Stop() {
 	this.Status = DOWNLOADER_STATUS_STOP
 }
 func (this *Downloader) Pause() {
-	this.Status = DOWNLOADER_STATUS_PAUSE
+	if this.Status == DOWNLOADER_STATUS_RUNING {
+		this.Status = DOWNLOADER_STATUS_PAUSE
+	}
 }
 func (this *Downloader) UnPause() {
-	this.Status = DOWNLOADER_STATUS_RUNING
+	if this.Status == DOWNLOADER_STATUS_PAUSE {
+		this.Status = DOWNLOADER_STATUS_RUNING
+	}
 }
 
 // dead loop for download

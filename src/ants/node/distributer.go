@@ -36,8 +36,16 @@ func (this *Distributer) IsPause() bool {
 	return this.Status == DISTRIBUTE_PAUSE
 }
 func (this *Distributer) Pause() {
-	this.Status = DISTRIBUTE_PAUSE
+	if this.Status == DISTRIBUTE_RUNING {
+		this.Status = DISTRIBUTE_PAUSE
+	}
 }
+func (this *Distributer) Unpause() {
+	if this.Status == DISTRIBUTE_PAUSE {
+		this.Status = DISTRIBUTE_RUNING
+	}
+}
+
 func (this *Distributer) Stop() {
 	this.Status = DISTRIBUTE_STOP
 }
