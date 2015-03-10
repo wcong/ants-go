@@ -15,6 +15,7 @@ const (
 	DISTRIBUTE_RUNING = iota
 	DISTRIBUTE_PAUSE
 	DISTRIBUTE_STOP
+	DISTRIBUTE_STOPED
 )
 
 type Distributer struct {
@@ -25,11 +26,11 @@ type Distributer struct {
 }
 
 func NewDistributer(cluster *Cluster, node *Node) *Distributer {
-	return &Distributer{DISTRIBUTE_STOP, cluster, node, 0}
+	return &Distributer{DISTRIBUTE_STOPED, cluster, node, 0}
 }
 
 func (this *Distributer) IsStop() bool {
-	return this.Status == DISTRIBUTE_STOP
+	return this.Status == DISTRIBUTE_STOPED
 }
 
 func (this *Distributer) IsPause() bool {
@@ -54,6 +55,12 @@ func (this *Distributer) Start() {
 	if this.Status == DISTRIBUTE_RUNING {
 		return
 	}
+	for {
+		if this.IsStop() {
+			break
+		}
+		time.Sleep(1 * time.Second)
+	}
 	this.Status = DISTRIBUTE_RUNING
 	this.Run()
 }
@@ -61,7 +68,8 @@ func (this *Distributer) Start() {
 // dead loop cluster pop request
 func (this *Distributer) Run() {
 	for {
-		if this.IsStop() {
+		if this.Status == DISTRIBUTE_STOP {
+			this.Status = DISTRIBUTE_STOPED
 			break
 		}
 		if this.IsPause() {

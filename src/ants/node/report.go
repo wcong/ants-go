@@ -15,6 +15,7 @@ const (
 	REPORT_STATUS_RUNNING = iota
 	REPORT_STATUS_PAUSE
 	REPORT_STATUS_STOP
+	REPORT_STATUS_STOPED
 )
 
 type Reporter struct {
@@ -25,12 +26,18 @@ type Reporter struct {
 
 func NewReporter(node *Node) *Reporter {
 	resultQuene := crawler.NewResultQuene()
-	return &Reporter{REPORT_STATUS_STOP, resultQuene, node}
+	return &Reporter{REPORT_STATUS_STOPED, resultQuene, node}
 }
 
 func (this *Reporter) Start() {
 	if this.Status == REPORT_STATUS_RUNNING {
 		return
+	}
+	for {
+		if this.IsStop() {
+			break
+		}
+		time.Sleep(1 * time.Second)
 	}
 	this.Status = REPORT_STATUS_RUNNING
 	go this.Run()
@@ -53,7 +60,7 @@ func (this *Reporter) Stop() {
 }
 
 func (this *Reporter) IsStop() bool {
-	return this.Status == REPORT_STATUS_STOP
+	return this.Status == REPORT_STATUS_STOPED
 }
 
 // pop result quene
@@ -66,6 +73,7 @@ func (this *Reporter) Run() {
 			continue
 		}
 		if this.Status != REPORT_STATUS_RUNNING {
+			this.Status = REPORT_STATUS_STOPED
 			break
 		}
 		result := this.ResultQuene.Pop()

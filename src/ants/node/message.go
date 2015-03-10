@@ -1,30 +1,47 @@
 package node
 
 import (
+	"ants/crawler"
 	"ants/http"
 )
 
-const (
-	HADNLER_JOIN_REQUEST = iota
-	HADNLER_JOIN_RESPONSE
-	HADNLER_JOIN_EXAM // all node fix node list and master node
-	HANDLER_SEND_MASTER_REQUEST
-	HANDLER_SEND_REQUEST
-	HANDLER_SEND_REQUEST_RESULT
-	HANDLER_STOP_NODE
-)
+type RpcBase struct {
+	NodeInfo *NodeInfo
+	Result   bool
+}
 
-// what a message would do
-// *		message type
-// *		the request for crawl
-// *		the result of crawl
-// *		scraped request result
-// *		the node which scrape it
-type RequestMessage struct {
-	Type            int
-	Request         *http.Request
-	CrawlResult     string // if success just empty string,or error reason
-	ScrapedRequests []*http.Request
-	NodeInfo        *NodeInfo
-	ClusterInfo     *ClusterInfo
+type LeftMeInRequest struct {
+	RpcBase
+}
+
+// if result is true, it is master ;if false,close the client and connect to nodeinfo
+type LeftMeInResponse struct {
+	RpcBase
+}
+
+//
+type DistributeRequest struct {
+	RpcBase
+	Request *http.Request
+}
+type DistributeReqponse struct {
+	RpcBase
+}
+
+// report to master the result of crawl request
+type ReportRequest struct {
+	RpcBase
+	ScrapeResult *crawler.ScrapeResult
+}
+
+type ReportResponse struct {
+	RpcBase
+}
+
+// stop the node when all request is finished
+type StopRequest struct {
+	RpcBase
+}
+type StopResponse struct {
+	RpcBase
 }

@@ -17,7 +17,7 @@ func (this *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	url := r.URL.String()
 	log.Println("get request:" + url)
 	if !this.Node.Cluster.IsReady() {
-		w.Write([]byte("sorry,clust not ready,please wait"))
+		w.Write([]byte("sorry,cluster not ready,please wait"))
 		return
 	}
 	path := r.URL.Path

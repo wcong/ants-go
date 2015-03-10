@@ -163,6 +163,11 @@ func (this *Cluster) HasNode(nodeName string) bool {
 	return false
 }
 
+// get master node
+func (this *Cluster) GetMasterNode() *NodeInfo {
+	return this.ClusterInfo.MasterNode
+}
+
 // is cluster ready for crawl
 func (this *Cluster) IsReady() bool {
 	return this.ClusterInfo.Status == CLUSTER_STATUS_READY

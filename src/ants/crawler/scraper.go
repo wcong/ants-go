@@ -9,6 +9,7 @@ import (
 
 const (
 	SCRAPY_STATUS_STOP = iota
+	SCRAPY_STATUS_STOPED
 	SCRAPY_STATUS_RUNING
 	SCRAPY_STATUS_PAUSE
 )
@@ -28,13 +29,20 @@ type Scraper struct {
 
 //
 func NewScraper(resultQuene *ResultQuene, responseQuene *ResponseQuene, spiderMap map[string]*spiders.Spider) *Scraper {
-	return &Scraper{SCRAPY_STATUS_STOP, resultQuene, responseQuene, spiderMap}
+	return &Scraper{SCRAPY_STATUS_STOPED, resultQuene, responseQuene, spiderMap}
 }
 
 func (this *Scraper) Start() {
 	if this.Status == SCRAPY_STATUS_RUNING {
 		return
 	}
+	for {
+		if this.Status == SCRAPY_STATUS_STOPED {
+			break
+		}
+		time.Sleep(1 * time.Second)
+	}
+
 	log.Println("start scraper")
 	this.Status = SCRAPY_STATUS_RUNING
 	this.Scrapy()
@@ -65,6 +73,7 @@ func (this *Scraper) Scrapy() {
 			continue
 		}
 		if this.Status != SCRAPY_STATUS_RUNING {
+			this.Status = SCRAPY_STATUS_STOPED
 			break
 		}
 		response := this.ResponseQuene.Pop()

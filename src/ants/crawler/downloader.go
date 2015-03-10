@@ -10,6 +10,7 @@ const (
 	DOWNLOADER_STATUS_STOP = iota
 	DOWNLOADER_STATUS_RUNING
 	DOWNLOADER_STATUS_PAUSE
+	DOWNLOADER_STATUS_STOPED
 )
 
 // downloader tools
@@ -24,12 +25,19 @@ func NewDownloader(resuqstQuene *RequestQuene, responseQuene *ResponseQuene) *Do
 	clientList := make([]*http.Client, 0)
 	client := http.NewClient()
 	clientList = append(clientList, client)
-	return &Downloader{DOWNLOADER_STATUS_STOP, resuqstQuene, responseQuene, clientList}
+	return &Downloader{DOWNLOADER_STATUS_STOPED, resuqstQuene, responseQuene, clientList}
 }
 
+// DOWNLOADER_STATUS_STOPED means the dead loop is actually dead
 func (this *Downloader) Start() {
 	if this.Status == DOWNLOADER_STATUS_RUNING {
 		return
+	}
+	for {
+		if this.IsStop() {
+			break
+		}
+		time.Sleep(1 * time.Second)
 	}
 	log.Println("start downloader")
 	this.Status = DOWNLOADER_STATUS_RUNING
@@ -48,6 +56,9 @@ func (this *Downloader) UnPause() {
 		this.Status = DOWNLOADER_STATUS_RUNING
 	}
 }
+func (this *Downloader) IsStop() bool {
+	return this.Status == DOWNLOADER_STATUS_STOPED
+}
 
 // dead loop for download
 // pop a request
@@ -59,7 +70,8 @@ func (this *Downloader) Download() {
 			time.Sleep(1 * time.Second)
 			continue
 		}
-		if this.Status != DOWNLOADER_STATUS_RUNING {
+		if this.Status == DOWNLOADER_STATUS_STOP {
+			this.Status = DOWNLOADER_STATUS_STOPED
 			break
 		}
 		request := this.RequestQuene.Pop()

@@ -3,9 +3,7 @@ package node
 import (
 	"ants/crawler"
 	"ants/http"
-	"ants/transport"
 	"ants/util"
-	"encoding/json"
 	"log"
 	"strconv"
 	"strings"
@@ -32,11 +30,11 @@ type NodeInfo struct {
 }
 
 type Node struct {
-	NodeInfo    *NodeInfo
-	Settings    *util.Settings
-	Cluster     *Cluster
-	HttpServer  *http.HttpServer
-	Transporter *Transporter
+	NodeInfo   *NodeInfo
+	Settings   *util.Settings
+	Cluster    *Cluster
+	HttpServer *http.HttpServer
+	RPCer      *RPCer
 	// those conpoment maybe stop
 	Crawler     *crawler.Crawler
 	Distributer *Distributer
@@ -64,8 +62,8 @@ func (this *Node) Init() {
 	this.Crawler.LoadSpiders()
 	router := NewRouter(this)
 	this.HttpServer = http.NewHttpServer(this.Settings, router)
-	transporter := NewTransporter(this.Settings, this)
-	this.Transporter = transporter
+	rpcer := NewRPCer(this, this.Settings)
+	this.RPCer = rpcer
 	this.Distributer = NewDistributer(this.Cluster, this)
 }
 
@@ -74,7 +72,7 @@ func (this *Node) Start() {
 	wg := new(sync.WaitGroup)
 	wg.Add(1)
 	go this.HttpServer.Start(wg)
-	this.Transporter.Start()
+	this.RPCer.start()
 	log.Println("ok,we are ready")
 	this.JoinNode()
 	wg.Wait()
@@ -125,17 +123,8 @@ func (this *Node) DistributeRequest(request *http.Request) {
 		this.Crawler.RequestQuene.Push(request)
 		this.Cluster.AddToCrawlingQuene(request)
 	} else {
-		requestSlice := make([]*http.Request, 1)
-		requestSlice[0] = request
-		jsonMessage := RequestMessage{
-			Type:    HANDLER_SEND_REQUEST,
-			Request: request,
-		}
-		message, err := json.Marshal(jsonMessage)
-		if err != nil {
-			log.Println(err)
-		} else {
-			this.Transporter.SendMessageToNode(request.NodeName, string(message))
+		err := this.RPCer.distribute(request.NodeName, request)
+		if err == nil {
 			this.Cluster.AddToCrawlingQuene(request)
 		}
 	}
@@ -143,33 +132,21 @@ func (this *Node) DistributeRequest(request *http.Request) {
 
 // report result of request to master
 func (this *Node) ReportToMaster(result *crawler.ScrapeResult) {
-	requestMessage := &RequestMessage{
-		Type:            HANDLER_SEND_REQUEST_RESULT,
-		Request:         result.Request,
-		CrawlResult:     result.CrawlResult,
-		ScrapedRequests: result.ScrapedRequests,
-		NodeInfo:        this.NodeInfo,
-	}
 	if this.Cluster.IsMasterNode() {
-		this.AcceptResult(requestMessage)
-		return
+		this.AcceptResult(result)
+	} else {
+		this.RPCer.reportResult(this.Cluster.GetMasterName(), result)
 	}
-	message, err := json.Marshal(requestMessage)
-	if err != nil {
-		log.Panic(err)
-		return
-	}
-	this.Transporter.SendMessageToNode(this.Cluster.GetMasterName(), string(message))
 }
 
 // result of crawl request
 // tell cluster request is down
 // add scraped request to cluster
 // close if cluster has no further request and running request
-func (this *Node) AcceptResult(responseMessage *RequestMessage) {
-	this.Cluster.Crawled(responseMessage.Request.NodeName, responseMessage.Request.UniqueName)
-	if len(responseMessage.ScrapedRequests) > 0 {
-		for _, request := range responseMessage.ScrapedRequests {
+func (this *Node) AcceptResult(scrapyResult *crawler.ScrapeResult) {
+	this.Cluster.Crawled(scrapyResult.Request.NodeName, scrapyResult.Request.UniqueName)
+	if len(scrapyResult.ScrapedRequests) > 0 {
+		for _, request := range scrapyResult.ScrapedRequests {
 			this.Cluster.AddRequest(request)
 		}
 	}
@@ -180,16 +157,12 @@ func (this *Node) AcceptResult(responseMessage *RequestMessage) {
 
 // close all node
 func (this *Node) CloseAllNode() {
-	requestMessage := &RequestMessage{}
-	requestMessage.Type = HANDLER_STOP_NODE
-	json, _ := json.Marshal(requestMessage)
-	message := string(json)
 	for _, nodeInfo := range this.Cluster.ClusterInfo.NodeList {
 		if nodeInfo.Name == this.NodeInfo.Name {
 			this.StopCrawl()
 			continue
 		}
-		this.Transporter.SendMessageToNode(nodeInfo.Name, message)
+		this.RPCer.stopNode(nodeInfo.Name)
 	}
 }
 
@@ -198,27 +171,6 @@ func (this *Node) StopCrawl() {
 	this.Crawler.StopSpider()
 	this.Distributer.Stop()
 	this.Reporter.Stop()
-}
-
-// start dead loop for all job
-func (this *Node) StartCrawl() {
-	go this.Distributer.Start()
-	go this.Reporter.Start()
-	go this.Crawler.Start()
-}
-
-// pause crawl
-func (this *Node) PauseCrawl() {
-	this.Distributer.Pause()
-	this.Reporter.Pause()
-	this.Crawler.Pause()
-}
-
-// unpause crawl
-func (this *Node) UnpauseCrawl() {
-	this.Distributer.Unpause()
-	this.Reporter.Unpause()
-	this.Crawler.UnPause()
 }
 
 // join node
@@ -244,23 +196,15 @@ func (this *Node) JoinNode() {
 		this.Cluster.MakeMasterNode(this.NodeInfo.Name)
 		this.Cluster.ClusterInfo.Status = CLUSTER_STATUS_READY
 	}
+	this.Ready()
 }
 
+// try to join cluster
 func (this *Node) sendJoinRequest(ip string, port int) bool {
 	isNodeExist := false
-	conn, err := transport.InitClient(ip, port)
-	if err != nil {
-		log.Println(err)
-	} else {
+	err := this.RPCer.letMeIn(ip, port)
+	if err == nil {
 		isNodeExist = true
-		go this.Transporter.ClientReader(conn)
-		jsonMessage := RequestMessage{
-			Type:        HADNLER_JOIN_REQUEST,
-			NodeInfo:    this.NodeInfo,
-			ClusterInfo: this.Cluster.ClusterInfo,
-		}
-		message, _ := json.Marshal(jsonMessage)
-		this.Transporter.SendMessage(conn, string(message))
 	}
 	return isNodeExist
 }
@@ -273,4 +217,25 @@ func (this *Node) Join() {
 func (this *Node) Ready() {
 	this.Cluster.Ready()
 	this.UnpauseCrawl()
+}
+
+// start dead loop for all job
+func (this *Node) StartCrawl() {
+	go this.Distributer.Start()
+	go this.Reporter.Start()
+	go this.Crawler.Start()
+}
+
+// pause crawl
+func (this *Node) PauseCrawl() {
+	this.Distributer.Pause()
+	this.Reporter.Pause()
+	this.Crawler.Pause()
+}
+
+// unpause crawl
+func (this *Node) UnpauseCrawl() {
+	this.Distributer.Unpause()
+	this.Reporter.Unpause()
+	this.Crawler.UnPause()
 }
