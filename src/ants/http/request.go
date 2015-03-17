@@ -22,6 +22,7 @@ type Request struct {
 	SpiderName string
 	ParserName string
 	NodeName   string
+	Depth      int
 }
 
 func NewRequest(method, url, spiderName, parserName string, body io.Reader, cookieJar int) (*Request, error) {
@@ -33,7 +34,9 @@ func NewRequest(method, url, spiderName, parserName string, body io.Reader, cook
 		GoRequest:  httpRequest,
 		CookieJar:  cookieJar,
 		SpiderName: spiderName,
-		ParserName: parserName}
+		ParserName: parserName,
+		Depth:      0,
+	}
 	request.makeUniqueName()
 	return request, err
 }

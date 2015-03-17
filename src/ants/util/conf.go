@@ -13,6 +13,7 @@ type Settings struct {
 	Name            string
 	NodeList        []string
 	TcpPort         int
+	LogPath         string
 }
 
 // load json config

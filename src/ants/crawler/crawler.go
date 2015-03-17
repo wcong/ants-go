@@ -15,7 +15,6 @@ import (
 // *		scrape tools
 type Crawler struct {
 	SpiderMap     map[string]*base_spider.Spider
-	Status        CrawlerStatus
 	RequestQuene  *RequestQuene
 	ResponseQuene *ResponseQuene
 	Downloader    *Downloader
@@ -32,16 +31,11 @@ type StartSpiderResult struct {
 func NewCrawler(resultQuene *ResultQuene) *Crawler {
 	requestQuene := NewRequestQuene()
 	responseQuene := NewResponseQuene()
-	spiderMap := make(map[string]*base_spider.Spider)
+	spiderMap := spiders.LoadAllSpiders()
 	downloader := NewDownloader(requestQuene, responseQuene)
 	scraper := NewScraper(resultQuene, responseQuene, spiderMap)
-	crawler := Crawler{spiderMap, CrawlerStatus{}, requestQuene, responseQuene, downloader, scraper}
+	crawler := Crawler{spiderMap, requestQuene, responseQuene, downloader, scraper}
 	return &crawler
-}
-
-func (this *Crawler) LoadSpiders() {
-	deadLoopTest := spiders.MakeDeadLoopSpider()
-	this.SpiderMap[deadLoopTest.Name] = deadLoopTest
 }
 
 // start a spider

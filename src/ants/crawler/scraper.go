@@ -81,7 +81,7 @@ func (this *Scraper) Scrapy() {
 			time.Sleep(1 * time.Second)
 			continue
 		}
-		log.Println("scrapy :" + response.GoResponse.Request.URL.String())
+		log.Println("scrapy:" + response.GoResponse.Request.URL.String())
 		requestList, err := this.SpiderMap[response.SpiderName].ParseMap[response.ParserName](response)
 		scrapeResult := &ScrapeResult{}
 		scrapeResult.Request = response.Request
@@ -90,6 +90,9 @@ func (this *Scraper) Scrapy() {
 			scrapeResult.CrawlResult = err.Error()
 		}
 		if requestList != nil {
+			for _, request := range requestList {
+				request.Depth += 1
+			}
 			scrapeResult.ScrapedRequests = requestList
 		}
 		this.ResultQuene.Push(scrapeResult)

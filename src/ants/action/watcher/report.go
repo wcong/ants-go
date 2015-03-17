@@ -1,6 +1,7 @@
-package node
+package watcher
 
 import (
+	"ants/action"
 	"ants/crawler"
 	"time"
 )
@@ -22,11 +23,12 @@ type Reporter struct {
 	Status      int
 	ResultQuene *crawler.ResultQuene
 	Node        *Node
+	RpcClient   action.RpcClientAnts
 }
 
-func NewReporter(node *Node) *Reporter {
+func NewReporter(node *Node, rpcClient action.RpcClientAnts) *Reporter {
 	resultQuene := crawler.NewResultQuene()
-	return &Reporter{REPORT_STATUS_STOPED, resultQuene, node}
+	return &Reporter{REPORT_STATUS_STOPED, resultQuene, node, rpcClient}
 }
 
 func (this *Reporter) Start() {
@@ -86,9 +88,10 @@ func (this *Reporter) Run() {
 			for _, request := range result.ScrapedRequests {
 				request.NodeName = nodeName
 			}
+		} 
+		if this.Node.IsMasterNode() {
 			this.Node.ReportToMaster(result)
-		} else {
-			time.Sleep(1 * time.Second)
+		}else{
+			this.rpcClient.ReportResult(this.Node.GetMasterName(), result)
 		}
-	}
 }

@@ -1,6 +1,9 @@
 package main
 
 import (
+	"ants"
+	"ants/action"
+	"ants/action/http"
 	"ants/node"
 	. "ants/util"
 	"flag"
@@ -23,11 +26,19 @@ func MakeSettings() *Settings {
 	flag.Parse()
 	return settings
 }
+func init() {
+
+}
+
 func main() {
 	log.SetFlags(log.Ldate | log.Ltime | log.Lshortfile)
 	log.Println("let us go shipping")
 	setting := MakeSettings()
 	Node := node.NewNode(setting)
+
+	rpcer := NewRPCer(this, this.Settings)
+	router := NewRouter(this)
+	this.HttpServer = http.NewHttpServer(this.Settings, router)
 	Node.Init()
 	log.Println("finish init")
 	Node.Start()

@@ -6,12 +6,15 @@ import (
 	"github.com/PuerkitoBio/goquery"
 )
 
-func MakeDeadLoopSpider() *spiders.Spider {
+func MakeDumpTestSpider() *spiders.Spider {
 	spider := spiders.Spider{}
-	spider.Name = "deal_loop_spider"
-	spider.StartUrls = []string{"http://www.baidu.com/s?wd=1"}
+	spider.Name = "dump_test_spider"
+	spider.StartUrls = []string{"http://www.baidu.com/s?wd=2"}
 	spider.ParseMap = make(map[string]func(response *http.Response) ([]*http.Request, error))
 	spider.ParseMap[spiders.BASE_PARSE_NAME] = func(response *http.Response) ([]*http.Request, error) {
+		if response.Request.Depth > 10 {
+			return nil, nil
+		}
 		doc, err := goquery.NewDocumentFromReader(response.GoResponse.Body)
 		if err != nil {
 			return nil, err

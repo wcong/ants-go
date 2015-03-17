@@ -1,7 +1,8 @@
-package node
+package watcher
 
 import (
 	"ants/http"
+	"ants/node"
 	"time"
 )
 
@@ -20,13 +21,14 @@ const (
 
 type Distributer struct {
 	Status    int
-	Cluster   *Cluster
-	Node      *Node
+	Cluster   *node.Cluster
+	Node      *node.Node
 	LastIndex int
+	RpcClient action.RpcClientAnts
 }
 
-func NewDistributer(cluster *Cluster, node *Node) *Distributer {
-	return &Distributer{DISTRIBUTE_STOPED, cluster, node, 0}
+func NewDistributer(cluster *node.Cluster, node *node.Node, rpcClient action.RpcClientAnts) *Distributer {
+	return &Distributer{DISTRIBUTE_STOPED, cluster, node, 0, rpcClient}
 }
 
 func (this *Distributer) IsStop() bool {
@@ -82,7 +84,11 @@ func (this *Distributer) Run() {
 			continue
 		}
 		this.Distribute(request)
-		this.Node.DistributeRequest(request)
+		if this.Node.IsMe(request.NodeName) {
+			this.Node.DistributeRequest(request)
+		} else {
+			this.RpcClient.Distribute(request.NodeName, request)
+		}
 	}
 }
 

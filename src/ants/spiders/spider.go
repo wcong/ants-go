@@ -20,7 +20,7 @@ what a spider do
 * 	define basic parse func
 */
 type Spider struct {
-	Status    int
+	Status    int //  init runnign or stop
 	Name      string
 	StartUrls []string
 	ParseMap  map[string]func(response *http.Response) ([]*http.Request, error)

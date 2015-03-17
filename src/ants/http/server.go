@@ -24,6 +24,10 @@ func NewHttpServer(setting *util.Settings, handler Http.Handler) *HttpServer {
 }
 
 func (this *HttpServer) Start(wg *sync.WaitGroup) {
+	go this.server(wg)
+}
+
+func (this *HttpServer) server(wg *sync.WaitGroup) {
 	log.Println("start to server http" + this.Addr)
 	err := this.ListenAndServe()
 	if err != nil {

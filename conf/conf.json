@@ -1,6 +1,7 @@
 {
  "ClusterName" : "guess",
  "HttpPort" : 8200,
+ "LogPath" : "../log",
  "MulticastEnable" : false,
  "Name" : "ants",
  "NodeList" : [

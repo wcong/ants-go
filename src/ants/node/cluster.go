@@ -4,6 +4,7 @@ import (
 	"ants/crawler"
 	"ants/http"
 	"ants/util"
+	"encoding/json"
 	"log"
 	"sync"
 )
@@ -41,7 +42,7 @@ type ClusterInfo struct {
 
 // receive basic request and record crawled requets
 type RequestStatus struct {
-	CrawledMap   map[string]int
+	CrawledMap   map[string]int // node + num
 	CrawlingMap  map[string]map[string]*http.Request
 	WaitingQuene *crawler.RequestQuene
 }
@@ -50,6 +51,8 @@ type Cluster struct {
 	ClusterInfo   *ClusterInfo
 	RequestStatus *RequestStatus
 	mutex         *sync.Mutex
+	crawlStatus   *crawler.CrawlerStatus
+	settings      *util.Settings
 }
 
 func NewCluster(settings *util.Settings, localNode *NodeInfo) *Cluster {
@@ -58,7 +61,7 @@ func NewCluster(settings *util.Settings, localNode *NodeInfo) *Cluster {
 	requestStatus.CrawledMap = make(map[string]int)
 	requestStatus.CrawlingMap = make(map[string]map[string]*http.Request)
 	requestStatus.WaitingQuene = crawler.NewRequestQuene()
-	cluster := &Cluster{clusterInfo, requestStatus, new(sync.Mutex)}
+	cluster := &Cluster{clusterInfo, requestStatus, new(sync.Mutex), crawler.NewCrawlerStatus(), settings}
 	cluster.ClusterInfo.NodeList = append(cluster.ClusterInfo.NodeList, localNode)
 	return cluster
 }
@@ -103,10 +106,16 @@ func (this *Cluster) ElectMaster() *NodeInfo {
 	return this.ClusterInfo.MasterNode
 }
 
+//when start a spider ,cluster should record it
+func (this *Cluster) StartSpider(spiderName string) {
+	this.crawlStatus.StartSpider(spiderName)
+}
+
 // pop a request from waiting quene
 // add to crawling quenu
 func (this *Cluster) PopRequest() *http.Request {
-	return this.RequestStatus.WaitingQuene.Pop()
+	request := this.RequestStatus.WaitingQuene.Pop()
+	return request
 }
 
 // record distribute request job
@@ -116,6 +125,7 @@ func (this *Cluster) AddToCrawlingQuene(request *http.Request) {
 		requestMap = make(map[string]*http.Request)
 		this.RequestStatus.CrawlingMap[request.NodeName] = requestMap
 	}
+	this.crawlStatus.Distribute(request.SpiderName)
 	requestMap[request.UniqueName] = request
 }
 
@@ -123,17 +133,32 @@ func (this *Cluster) AddToCrawlingQuene(request *http.Request) {
 // delete it from crawling quene
 // add crawled num
 func (this *Cluster) Crawled(nodeName, requestHashName string) {
-	requestMap, ok := this.RequestStatus.CrawlingMap[nodeName]
-	if !ok {
+	requestMap, nodeOk := this.RequestStatus.CrawlingMap[nodeName]
+	if !nodeOk {
 		log.Println("none node :" + nodeName)
 		return
 	}
+	request, requestOk := requestMap[requestHashName]
+	if !requestOk {
+		log.Println("none request :" + requestHashName)
+		return
+	}
+	// change RequestStatus
+	this.RequestStatus.CrawledMap[nodeName] += 1
 	delete(requestMap, requestHashName)
+	// change  crawlStatus
+	this.crawlStatus.Crawled(request.SpiderName)
+	if this.crawlStatus.CanWeStop(request.SpiderName) {
+		spiderStatus := this.crawlStatus.CloseSpider(request.SpiderName)
+		message, _ := json.Marshal(spiderStatus)
+		util.DumpResult(this.settings.LogPath, spiderStatus.Name, string(message))
+	}
 }
 
 // add a request to quene
 func (this *Cluster) AddRequest(request *http.Request) {
 	this.RequestStatus.WaitingQuene.Push(request)
+	this.crawlStatus.Push(request.SpiderName)
 }
 
 // get master node name

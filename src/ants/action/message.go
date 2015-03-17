@@ -1,12 +1,14 @@
-package node
+package rpc
 
 import (
+	"ants/action"
 	"ants/crawler"
 	"ants/http"
+	"ants/node"
 )
 
 type RpcBase struct {
-	NodeInfo *NodeInfo
+	NodeInfo *node.NodeInfo
 	Result   bool
 }
 

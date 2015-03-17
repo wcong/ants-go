@@ -10,18 +10,6 @@ import (
 	"sync"
 )
 
-/*
-what a node do
-*	init a node , a cluster and a crawler
-*	load spiders
-*	start http service
-*	start tcp service
-*   accept all http and tcp  request , process it to cluster or crawler
-*	*	start a spider
-*	*	distribute request
-* 	* 	accept request result some request or just scrapy result
-*/
-
 type NodeInfo struct {
 	Name     string
 	Ip       string
@@ -30,53 +18,24 @@ type NodeInfo struct {
 }
 
 type Node struct {
-	NodeInfo   *NodeInfo
-	Settings   *util.Settings
-	Cluster    *Cluster
-	HttpServer *http.HttpServer
-	RPCer      *RPCer
-	// those conpoment maybe stop
-	Crawler     *crawler.Crawler
-	Distributer *Distributer
-	Reporter    *Reporter
+	NodeInfo *NodeInfo
+	Settings *util.Settings
+	Cluster  *Cluster
+	Crawler  *crawler.Crawler
 }
 
-func NewNode(settings *util.Settings) *Node {
+func NewNode(settings *util.Settings, resultQuene *crawler.ResultQuene) *Node {
 	ip := util.GetLocalIp()
 	name := strconv.FormatUint(util.HashString(ip+strconv.Itoa(settings.TcpPort)), 10)
+	nodeInfo := &NodeInfo{name, ip, settings.TcpPort, settings}
+	crawler := crawler.NewCrawler(settings, resultQuene)
+	cluster := NewCluster(settings, nodeInfo)
 	return &Node{
-		NodeInfo: &NodeInfo{
-			Name:     name,
-			Ip:       ip,
-			Port:     settings.TcpPort,
-			Settings: settings},
+		NodeInfo: nodeInfo,
 		Settings: settings,
+		Cluster:  cluster,
+		Crawler:  crawler,
 	}
-}
-
-// init all base service and container
-func (this *Node) Init() {
-	this.Reporter = NewReporter(this)
-	this.Cluster = NewCluster(this.Settings, this.NodeInfo)
-	this.Crawler = crawler.NewCrawler(this.Reporter.ResultQuene)
-	this.Crawler.LoadSpiders()
-	router := NewRouter(this)
-	this.HttpServer = http.NewHttpServer(this.Settings, router)
-	rpcer := NewRPCer(this, this.Settings)
-	this.RPCer = rpcer
-	this.Distributer = NewDistributer(this.Cluster, this)
-}
-
-// start to server
-func (this *Node) Start() {
-	wg := new(sync.WaitGroup)
-	wg.Add(1)
-	go this.HttpServer.Start(wg)
-	this.RPCer.start()
-	log.Println("ok,we are ready")
-	this.JoinNode()
-	wg.Wait()
-	log.Println("shutting down,goods bye")
 }
 
 // add a node to cluster
@@ -99,11 +58,8 @@ func (this *Node) AddMasterNode(masterNodeInfo *NodeInfo) {
 // start a reporter report the crawl result
 func (this *Node) StartSpider(spiderName string) *crawler.StartSpiderResult {
 	result := this.Crawler.StartSpider(spiderName)
-	if result.Success && this.Distributer.IsStop() {
-		go this.Distributer.Start()
-	}
-	if result.Success && this.Reporter.IsStop() {
-		go this.Reporter.Start()
+	if result.Success {
+		this.Cluster.StartSpider(spiderName)
 	}
 	return result
 }
@@ -115,55 +71,54 @@ func (this *Node) AcceptRequest(request *http.Request) {
 	this.StartCrawl()
 }
 
+// is the node is myself
+func (this *Node) IsMe(nodeName string) bool {
+	return this.NodeInfo.Name == nodeName
+}
+
 // distribute request to every node
 // judge node
 // tell cluster where is the request
 func (this *Node) DistributeRequest(request *http.Request) {
-	if request.NodeName == this.NodeInfo.Name {
-		this.Crawler.RequestQuene.Push(request)
-		this.Cluster.AddToCrawlingQuene(request)
-	} else {
-		err := this.RPCer.distribute(request.NodeName, request)
-		if err == nil {
-			this.Cluster.AddToCrawlingQuene(request)
-		}
-	}
+	this.Crawler.RequestQuene.Push(request)
+	this.AddToCrawlingQuene(request)
+}
+
+func (this *Node) AddToCrawlingQuene(request *http.Request) {
+	this.Cluster.AddToCrawlingQuene(request)
 }
 
 // report result of request to master
 func (this *Node) ReportToMaster(result *crawler.ScrapeResult) {
 	if this.Cluster.IsMasterNode() {
 		this.AcceptResult(result)
-	} else {
-		this.RPCer.reportResult(this.Cluster.GetMasterName(), result)
 	}
 }
 
 // result of crawl request
-// tell cluster request is down
 // add scraped request to cluster
+// tell cluster request is down
 // close if cluster has no further request and running request
 func (this *Node) AcceptResult(scrapyResult *crawler.ScrapeResult) {
-	this.Cluster.Crawled(scrapyResult.Request.NodeName, scrapyResult.Request.UniqueName)
 	if len(scrapyResult.ScrapedRequests) > 0 {
 		for _, request := range scrapyResult.ScrapedRequests {
-			this.Cluster.AddRequest(request)
+			if request != nil {
+				this.Cluster.AddRequest(request)
+			}
 		}
 	}
-	if this.Cluster.IsStop() {
-		this.CloseAllNode()
-	}
+	// push request first , avoid spider shut down
+	this.Cluster.Crawled(scrapyResult.Request.NodeName, scrapyResult.Request.UniqueName)
+}
+
+// if there is none request left ,return true
+func (this *Node) IsStop() bool {
+	return this.Cluster.IsStop()
 }
 
 // close all node
-func (this *Node) CloseAllNode() {
-	for _, nodeInfo := range this.Cluster.ClusterInfo.NodeList {
-		if nodeInfo.Name == this.NodeInfo.Name {
-			this.StopCrawl()
-			continue
-		}
-		this.RPCer.stopNode(nodeInfo.Name)
-	}
+func (this *Node) GetAllNodeForClose() []*NodeInfo {
+	return this.Cluster.ClusterInfo.NodeList
 }
 
 // stop all crawl job
@@ -209,6 +164,21 @@ func (this *Node) sendJoinRequest(ip string, port int) bool {
 	return isNodeExist
 }
 
+// get master name of cluster
+func (this *Node) GetMasterName() string {
+	return this.Cluster.GetMasterName()
+}
+
+// get master node of cluster
+func (this *Node) GetMasterNode() *NodeInfo {
+	return this.Cluster.GetMasterNode()
+}
+
+// if this is the master node
+func (this *Node) IsMasterNode() bool {
+	return this.Cluster.IsMasterNode()
+}
+
 func (this *Node) Join() {
 	this.Cluster.Join()
 	this.PauseCrawl()
@@ -221,21 +191,15 @@ func (this *Node) Ready() {
 
 // start dead loop for all job
 func (this *Node) StartCrawl() {
-	go this.Distributer.Start()
-	go this.Reporter.Start()
 	go this.Crawler.Start()
 }
 
 // pause crawl
 func (this *Node) PauseCrawl() {
-	this.Distributer.Pause()
-	this.Reporter.Pause()
 	this.Crawler.Pause()
 }
 
 // unpause crawl
 func (this *Node) UnpauseCrawl() {
-	this.Distributer.Unpause()
-	this.Reporter.Unpause()
 	this.Crawler.UnPause()
 }
