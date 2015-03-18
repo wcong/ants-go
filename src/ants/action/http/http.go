@@ -50,12 +50,6 @@ func (this *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	this.Welcome(w, r)
 }
 
-type WelcomeInfo struct {
-	Message  string
-	Greeting string
-	Time     string
-}
-
 func (this *Router) Welcome(w http.ResponseWriter, r *http.Request) {
 	now := time.Now().Format("2006-01-02 15:04:05")
 	welcome := WelcomeInfo{
@@ -85,8 +79,12 @@ func (this *Router) Crawl(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	spiderName := r.Form["spider"][0]
 	now := time.Now().Format("2006-01-02 15:04:05")
-	result := this.node.StartSpider(spiderName)
-	result.Time = now
+	startResult := &StartSpiderResult{}
+	result, message := this.node.StartSpider(spiderName)
+	startResult.Time = now
+	startResult.Success = result
+	startResult.Spider = spiderName
+	startResult.Message = message
 	encoder, err := json.Marshal(result)
 	if err != nil {
 		log.Println(err)

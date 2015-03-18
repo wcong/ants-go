@@ -66,7 +66,7 @@ func NewCluster(settings *util.Settings, localNode *NodeInfo) *Cluster {
 	return cluster
 }
 
-// get
+// get crawl status
 func (this *Cluster) CrawlStatus() *crawler.CrawlerStatus {
 	return this.crawlStatus
 }
@@ -191,6 +191,11 @@ func (this *Cluster) HasNode(nodeName string) bool {
 		}
 	}
 	return false
+}
+
+// is the spider running
+func (this *Cluster) IsSpiderRunning(spiderName string) bool {
+	return this.crawlStatus.IsSpiderRunning(spiderName)
 }
 
 // get master node

@@ -21,13 +21,6 @@ type Crawler struct {
 	Scraper       *Scraper
 }
 
-type StartSpiderResult struct {
-	Success bool
-	Message string
-	Spider  string
-	Time    string
-}
-
 func NewCrawler(resultQuene *ResultQuene) *Crawler {
 	requestQuene := NewRequestQuene()
 	responseQuene := NewResponseQuene()
@@ -39,26 +32,14 @@ func NewCrawler(resultQuene *ResultQuene) *Crawler {
 }
 
 // start a spider
-func (this *Crawler) StartSpider(spiderName string) *StartSpiderResult {
+func (this *Crawler) StartSpider(spiderName string) {
 	log.Println("start to crawl spider " + spiderName)
 	spider := this.SpiderMap[spiderName]
-	result := &StartSpiderResult{}
-	if spider.Status == base_spider.SPIDERS_STATUS_RUNNING {
-		result.Success = false
-		result.Message = "spider already runing"
-		result.Spider = spider.Name
-		return result
-	}
-	spider.Status = base_spider.SPIDERS_STATUS_RUNNING
 	startRequests := spider.MakeStartRequests()
 	for _, request := range startRequests {
 		this.RequestQuene.Push(request)
 	}
 	this.Start()
-	result.Success = true
-	result.Message = "started spider"
-	result.Spider = spider.Name
-	return result
 }
 
 func (this *Crawler) Start() {

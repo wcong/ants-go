@@ -38,6 +38,11 @@ func NewCrawlerStatus() *CrawlerStatus {
 	return &CrawlerStatus{crawledSpider, runningSpider}
 }
 
+func (this *CrawlerStatus) IsSpiderRunning(spiderName string) bool {
+	_, ok := this.runningSpider[spiderName]
+	return ok
+}
+
 // add a spider to running map
 func (this *CrawlerStatus) StartSpider(spiderName string) {
 	_, ok := this.runningSpider[spiderName]

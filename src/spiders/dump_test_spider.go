@@ -29,6 +29,7 @@ func MakeDumpTestSpider() *spiders.Spider {
 		for _, attr := range attrList {
 			if attr.Key == "href" {
 				nextPageLink = attr.Val
+				break
 			}
 		}
 		nextPage := "http://www.baidu.com" + nextPageLink

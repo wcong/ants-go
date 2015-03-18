@@ -53,12 +53,13 @@ func (this *Node) AddMasterNode(masterNodeInfo *NodeInfo) {
 
 // start a spider if not deap loop distribute ,start it
 // start a reporter report the crawl result
-func (this *Node) StartSpider(spiderName string) *crawler.StartSpiderResult {
-	result := this.Crawler.StartSpider(spiderName)
-	if result.Success {
-		this.Cluster.StartSpider(spiderName)
+func (this *Node) StartSpider(spiderName string) (bool, string) {
+	if this.Cluster.IsSpiderRunning(spiderName) {
+		return false, "spider is running"
 	}
-	return result
+	this.Crawler.StartSpider(spiderName)
+	this.Cluster.StartSpider(spiderName)
+	return true, "started"
 }
 
 // get distribute request

@@ -20,10 +20,9 @@ what a spider do
 * 	define basic parse func
 */
 type Spider struct {
-	Status    int //  init runnign or stop
 	Name      string
 	StartUrls []string
-	ParseMap  map[string]func(response *http.Response) ([]*http.Request, error)
+	ParseMap  map[string]func(response *http.Response) ([]*http.Request, error) // defined you own parse function to scrapy response,make sure it return []response
 }
 
 func (this *Spider) MakeStartRequests() []*http.Request {

@@ -17,10 +17,10 @@ what a request would do
 */
 type Request struct {
 	GoRequest  *Http.Request
-	CookieJar  int
+	CookieJar  int // if the web site store message in cookie which show diffrent result,you shoud use it
 	UniqueName string
 	SpiderName string
-	ParserName string
+	ParserName string // crawler will send the response to named parseFunction
 	NodeName   string
 	Depth      int
 }

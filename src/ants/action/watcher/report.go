@@ -61,10 +61,12 @@ func (this *Reporter) Unpause() {
 	}
 }
 
+// set it stop,if deap loop see this sign,make it stoped
 func (this *Reporter) Stop() {
 	this.Status = REPORT_STATUS_STOP
 }
 
+// if it is stoped
 func (this *Reporter) IsStop() bool {
 	return this.Status == REPORT_STATUS_STOPED
 }
@@ -74,7 +76,7 @@ func (this *Reporter) IsStop() bool {
 // send it to master
 func (this *Reporter) Run() {
 	for {
-		if this.Status == REPORT_STATUS_PAUSE {
+		if this.IsPause() {
 			time.Sleep(1 * time.Second)
 			continue
 		}
