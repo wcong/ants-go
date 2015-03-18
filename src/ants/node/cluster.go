@@ -201,6 +201,7 @@ func (this *Cluster) IsReady() bool {
 func (this *Cluster) Ready() {
 	this.ClusterInfo.Status = CLUSTER_STATUS_READY
 }
+
 func (this *Cluster) Join() {
 	this.ClusterInfo.Status = CLUSTER_STATUS_JOIN
 }
