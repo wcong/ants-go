@@ -67,14 +67,17 @@ func main() {
 	var wg sync.WaitGroup
 	wg.Add(1)
 	setting := MakeSettings()
+	if len(os.Args) == 2 && (os.Args[1] == "-h" || os.Args[1] == "-help") {
+		flag.PrintDefaults()
+		return
+	}
 	resultQuene := crawler.NewResultQuene()
 	Node := node.NewNode(setting, resultQuene)
 	var rpcClient action.RpcClientAnts = rpc.NewRpcClient(Node)
 	var reporter, distributer action.Watcher = watcher.NewReporter(Node, rpcClient, resultQuene), watcher.NewDistributer(Node, rpcClient)
-	var rpcServer action.RpcServerAnts = rpc.NewRpcServer(Node, setting.TcpPort, rpcClient, reporter, distributer)
+	rpc.NewRpcServer(Node, setting.TcpPort, rpcClient, reporter, distributer)
 	router := AHttp.NewRouter(Node, reporter, distributer)
 	httpServer := http.NewHttpServer(setting, router)
-	rpcServer.Start()
 	httpServer.Start(wg)
 	initCluster(setting, rpcClient, Node)
 	wg.Wait()

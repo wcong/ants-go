@@ -15,7 +15,6 @@ import (
 *	RpcServer
 **/
 type RpcServer interface {
-	Start()
 }
 
 /*

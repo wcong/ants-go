@@ -23,7 +23,9 @@ type RpcServer struct {
 }
 
 func NewRpcServer(node *node.Node, port int, rpcClient action.RpcClientAnts, reporter, distributer action.Watcher) *RpcServer {
-	return &RpcServer{node, port, rpcClient, reporter, distributer}
+	rpcServer := &RpcServer{node, port, rpcClient, reporter, distributer}
+	rpcServer.start()
+	return rpcServer
 }
 
 // start a rpc server
@@ -45,7 +47,7 @@ func (this *RpcServer) server() {
 }
 
 // start a dead loop for server
-func (this *RpcServer) Start() {
+func (this *RpcServer) start() {
 	go this.server()
 }
 

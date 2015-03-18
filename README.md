@@ -14,6 +14,18 @@ go get github.com/go-sql-driver/mysql
 go install src/ants/boostracp/ants.go
 ```
 
+### run
+
+``` shell
+cd bin
+./ants
+```
+there are some flag you can set,check out the help message
+``` shell
+./ants -h
+./ants -help
+```
+
 ### Customize spider
 1.	go to *src/spiders*
 2.	write your spiders follow the example *deap_loop_spider.go* or go to the [spider page](./SPIDER.md)
