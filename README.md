@@ -11,7 +11,7 @@ go get github.com/go-sql-driver/mysql
 ### install
 
 ``` shell
-go install src/ants/boostracp/boostracp.go
+go install src/ants/boostracp/ants.go
 ```
 
 ### Customize spider
