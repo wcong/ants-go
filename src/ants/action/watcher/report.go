@@ -27,8 +27,7 @@ type Reporter struct {
 	rpcClient   action.RpcClientAnts
 }
 
-func NewReporter(node *node.Node, rpcClient action.RpcClientAnts) *Reporter {
-	resultQuene := crawler.NewResultQuene()
+func NewReporter(node *node.Node, rpcClient action.RpcClientAnts, resultQuene *crawler.ResultQuene) *Reporter {
 	return &Reporter{REPORT_STATUS_STOPED, resultQuene, node, rpcClient}
 }
 

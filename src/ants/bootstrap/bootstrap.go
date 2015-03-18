@@ -21,10 +21,13 @@ const (
 	CONF_FILE = "/../conf/conf.json"
 )
 
+// init command line param
 func initFlag(settings *util.Settings) {
 	flag.IntVar(&settings.TcpPort, "tcp", settings.TcpPort, "tcp port")
 	flag.IntVar(&settings.HttpPort, "http", settings.HttpPort, "http port")
 }
+
+// load setting from json file and input
 func MakeSettings() *util.Settings {
 	pwd, _ := os.Getwd()
 	settings := util.LoadSettingFromFile(pwd + CONF_FILE)
@@ -67,7 +70,7 @@ func main() {
 	resultQuene := crawler.NewResultQuene()
 	Node := node.NewNode(setting, resultQuene)
 	var rpcClient action.RpcClientAnts = rpc.NewRpcClient(Node)
-	var reporter, distributer action.Watcher = watcher.NewReporter(Node, rpcClient), watcher.NewDistributer(Node, rpcClient)
+	var reporter, distributer action.Watcher = watcher.NewReporter(Node, rpcClient, resultQuene), watcher.NewDistributer(Node, rpcClient)
 	var rpcServer action.RpcServerAnts = rpc.NewRpcServer(Node, setting.TcpPort, rpcClient, reporter, distributer)
 	router := AHttp.NewRouter(Node, reporter, distributer)
 	httpServer := http.NewHttpServer(setting, router)
