@@ -4,10 +4,7 @@ import (
 	"ants/crawler"
 	"ants/http"
 	"ants/util"
-	"log"
 	"strconv"
-	"strings"
-	"sync"
 )
 
 type NodeInfo struct {
@@ -28,7 +25,7 @@ func NewNode(settings *util.Settings, resultQuene *crawler.ResultQuene) *Node {
 	ip := util.GetLocalIp()
 	name := strconv.FormatUint(util.HashString(ip+strconv.Itoa(settings.TcpPort)), 10)
 	nodeInfo := &NodeInfo{name, ip, settings.TcpPort, settings}
-	crawler := crawler.NewCrawler(settings, resultQuene)
+	crawler := crawler.NewCrawler(resultQuene)
 	cluster := NewCluster(settings, nodeInfo)
 	return &Node{
 		NodeInfo: nodeInfo,
@@ -124,44 +121,6 @@ func (this *Node) GetAllNodeForClose() []*NodeInfo {
 // stop all crawl job
 func (this *Node) StopCrawl() {
 	this.Crawler.StopSpider()
-	this.Distributer.Stop()
-	this.Reporter.Stop()
-}
-
-// join node
-// if cluster exist
-//		send join request only
-// else
-//		make it self master,make node ready for crawl job
-func (this *Node) JoinNode() {
-	this.Cluster.ClusterInfo.Status = CLUSTER_STATUS_JOIN
-	isClusterExist := false
-	if len(this.Settings.NodeList) > 0 {
-		for _, nodeInfo := range this.Settings.NodeList {
-			nodeSettings := strings.Split(nodeInfo, ":")
-			ip := nodeSettings[0]
-			port, _ := strconv.Atoi(nodeSettings[1])
-			if ip == this.NodeInfo.Ip && port == this.NodeInfo.Port {
-				continue
-			}
-			isClusterExist = this.sendJoinRequest(ip, port)
-		}
-	}
-	if !isClusterExist {
-		this.Cluster.MakeMasterNode(this.NodeInfo.Name)
-		this.Cluster.ClusterInfo.Status = CLUSTER_STATUS_READY
-	}
-	this.Ready()
-}
-
-// try to join cluster
-func (this *Node) sendJoinRequest(ip string, port int) bool {
-	isNodeExist := false
-	err := this.RPCer.letMeIn(ip, port)
-	if err == nil {
-		isNodeExist = true
-	}
-	return isNodeExist
 }
 
 // get master name of cluster
@@ -172,6 +131,11 @@ func (this *Node) GetMasterName() string {
 // get master node of cluster
 func (this *Node) GetMasterNode() *NodeInfo {
 	return this.Cluster.GetMasterNode()
+}
+
+// make master node
+func (this *Node) MakeMasterNode(nodeName string) {
+	this.Cluster.MakeMasterNode(nodeName)
 }
 
 // if this is the master node

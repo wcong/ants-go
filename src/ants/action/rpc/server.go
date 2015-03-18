@@ -1,11 +1,13 @@
 package rpc
 
 import (
-	"ants/"
 	"ants/action"
 	"ants/node"
+	"log"
+	"net"
 	"net/rpc"
 	"net/rpc/jsonrpc"
+	"strconv"
 )
 
 const (
@@ -27,7 +29,7 @@ func NewRpcServer(node *node.Node, port int, rpcClient action.RpcClientAnts, rep
 // start a rpc server
 func (this *RpcServer) server() {
 	rpc.Register(this)
-	listener, e := net.Listen(RPC_TYPE, ":"+strconv.Itoa(RPC_TYPE))
+	listener, e := net.Listen(RPC_TYPE, ":"+strconv.Itoa(this.port))
 	if e != nil {
 		log.Println(e)
 		return
@@ -55,7 +57,7 @@ func (this *RpcServer) LetMeIn(request *action.LeftMeInRequest, response *action
 		this.node.Join()
 		response.Result = true
 		response.NodeInfo = this.node.NodeInfo
-		this.connect(request.NodeInfo)
+		this.rpcClient.Connect(request.NodeInfo.Ip, request.NodeInfo.Port)
 		this.node.Ready()
 	} else {
 		response.Result = false
@@ -85,10 +87,10 @@ func (this *RpcServer) AcceptRequest(request *action.DistributeRequest, response
 // for master accept crawl result
 func (this *RpcServer) AcceptResult(request *action.ReportRequest, response *action.ReportResponse) error {
 	this.node.AcceptResult(request.ScrapeResult)
-	if this.Node.IsStop() {
-		for _, nodeInfo := range this.Node.GetAllNodeForClose() {
-			if this.Node.IsMe(nodeInfo.Name) {
-				this.Node.StopCrawl()
+	if this.node.IsStop() {
+		for _, nodeInfo := range this.node.GetAllNodeForClose() {
+			if this.node.IsMe(nodeInfo.Name) {
+				this.node.StopCrawl()
 			} else {
 				this.rpcClient.StopNode(nodeInfo.Name)
 			}

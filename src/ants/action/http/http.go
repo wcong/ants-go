@@ -1,4 +1,4 @@
-package action
+package http
 
 import (
 	"ants/action"
@@ -18,19 +18,19 @@ type Router struct {
 }
 
 func NewRouter(node *Node.Node, reporter, distributer action.Watcher) *Router {
-	mux = make(map[string]func(http.ResponseWriter, *http.Request))
-	mux["/"] = router.Welcome
-	mux["/cluster"] = router.Cluster
-	mux["/spiders"] = router.Spiders
-	mux["/crawl"] = router.Crawl
-	mux["/crawl/cluster"] = router.CrawlCluster
-	mux["/crawl/node"] = router.CrawlNode
+	mux := make(map[string]func(http.ResponseWriter, *http.Request))
 	router := &Router{
 		node:        node,
 		mux:         mux,
 		reporter:    reporter,
 		distributer: distributer,
 	}
+	mux["/"] = router.Welcome
+	mux["/cluster"] = router.Cluster
+	mux["/spiders"] = router.Spiders
+	mux["/crawl"] = router.Crawl
+	mux["/crawl/cluster"] = router.CrawlCluster
+	mux["/crawl/node"] = router.CrawlNode
 	return router
 }
 
@@ -42,7 +42,8 @@ func (this *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	path := r.URL.Path
-	if h, ok := this.Mux[path]; ok {
+	if h, ok := this.mux[path]; ok {
+		w.Header().Set(Http.CONTENT_TYPE, Http.JSON_CONTENT_TYPE)
 		h(w, r)
 		return
 	}
@@ -56,7 +57,6 @@ type WelcomeInfo struct {
 }
 
 func (this *Router) Welcome(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set(Http.CONTENT_TYPE, Http.JSON_CONTENT_TYPE)
 	now := time.Now().Format("2006-01-02 15:04:05")
 	welcome := WelcomeInfo{
 		"for crawl",
@@ -70,8 +70,7 @@ func (this *Router) Welcome(w http.ResponseWriter, r *http.Request) {
 	w.Write(encoder)
 }
 func (this *Router) Spiders(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	spiderList := make([]string, 0, len(this.Node.Crawler.SpiderMap))
+	spiderList := make([]string, 0, len(this.node.Crawler.SpiderMap))
 	for spider := range this.node.Crawler.SpiderMap {
 		spiderList = append(spiderList, spider)
 	}
@@ -83,19 +82,10 @@ func (this *Router) Spiders(w http.ResponseWriter, r *http.Request) {
 }
 
 func (this *Router) Crawl(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
 	r.ParseForm()
 	spiderName := r.Form["spider"][0]
 	now := time.Now().Format("2006-01-02 15:04:05")
 	result := this.node.StartSpider(spiderName)
-	if result.Success {
-		if this.distributer.IsStop() {
-			go this.Distributer.Start()
-		}
-		if this.reporter.IsStop() {
-			go this.Reporter.Start()
-		}
-	}
 	result.Time = now
 	encoder, err := json.Marshal(result)
 	if err != nil {
@@ -105,8 +95,7 @@ func (this *Router) Crawl(w http.ResponseWriter, r *http.Request) {
 }
 
 func (this *Router) Cluster(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	encoder, err := json.Marshal(this.Node.Cluster)
+	encoder, err := json.Marshal(this.node.Cluster)
 	if err != nil {
 		log.Println(err)
 	}
@@ -114,8 +103,7 @@ func (this *Router) Cluster(w http.ResponseWriter, r *http.Request) {
 }
 
 func (this *Router) CrawlCluster(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	encoder, err := json.Marshal(this.Node.Cluster.RequestStatus)
+	encoder, err := json.Marshal(this.node.Cluster.RequestStatus)
 	if err != nil {
 		log.Println(err)
 	}
@@ -123,8 +111,7 @@ func (this *Router) CrawlCluster(w http.ResponseWriter, r *http.Request) {
 }
 
 func (this *Router) CrawlNode(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	encoder, err := json.Marshal(this.Node.Cluster.crawlStatus)
+	encoder, err := json.Marshal(this.node.Cluster.CrawlStatus())
 	if err != nil {
 		log.Println(err)
 	}

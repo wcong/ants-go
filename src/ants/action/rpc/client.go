@@ -2,9 +2,13 @@ package rpc
 
 import (
 	"ants/action"
+	"ants/crawler"
 	"ants/http"
 	"ants/node"
+	"log"
 	"net/rpc"
+	"net/rpc/jsonrpc"
+	"strconv"
 )
 
 type RpcClient struct {
@@ -45,14 +49,14 @@ func (this *RpcClient) LetMeIn(ip string, port int) error {
 		this.node.Cluster.MakeMasterNode(response.NodeInfo.Name)
 	} else {
 		client.Close()
-		this.letMeIn(response.NodeInfo.Ip, response.NodeInfo.Port)
+		this.LetMeIn(response.NodeInfo.Ip, response.NodeInfo.Port)
 	}
 	return err
 }
 
 // for now it is for master connect to slave
-func (this *RpcClient) Connect(nodeInfo *node.NodeInfo) error {
-	client, err := this.Dial(nodeInfo.Ip, nodeInfo.Port)
+func (this *RpcClient) Connect(ip string, port int) error {
+	client, err := this.Dial(ip, port)
 	if err != nil {
 		return err
 	}
@@ -90,7 +94,7 @@ func (this *RpcClient) Distribute(nodeName string, request *http.Request) error 
 	if err != nil {
 		log.Println(err)
 	} else {
-		this.Node.AddToCrawlingQuene(request)
+		this.node.AddToCrawlingQuene(request)
 	}
 	return err
 }

@@ -1,6 +1,7 @@
 package watcher
 
 import (
+	"ants/action"
 	"ants/http"
 	"ants/node"
 	"time"
@@ -27,8 +28,8 @@ type Distributer struct {
 	RpcClient action.RpcClientAnts
 }
 
-func NewDistributer(cluster *node.Cluster, node *node.Node, rpcClient action.RpcClientAnts) *Distributer {
-	return &Distributer{DISTRIBUTE_STOPED, cluster, node, 0, rpcClient}
+func NewDistributer(node *node.Node, rpcClient action.RpcClientAnts) *Distributer {
+	return &Distributer{DISTRIBUTE_STOPED, node.Cluster, node, 0, rpcClient}
 }
 
 func (this *Distributer) IsStop() bool {

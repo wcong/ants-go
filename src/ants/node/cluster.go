@@ -66,6 +66,11 @@ func NewCluster(settings *util.Settings, localNode *NodeInfo) *Cluster {
 	return cluster
 }
 
+// get
+func (this *Cluster) CrawlStatus() *crawler.CrawlerStatus {
+	return this.crawlStatus
+}
+
 // is local node master node
 func (this *Cluster) IsMasterNode() bool {
 	if this.ClusterInfo.MasterNode == nil {

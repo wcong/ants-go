@@ -1,7 +1,6 @@
-package rpc
+package action
 
 import (
-	"ants/action"
 	"ants/crawler"
 	"ants/http"
 	"ants/node"

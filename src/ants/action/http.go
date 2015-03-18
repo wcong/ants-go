@@ -17,7 +17,6 @@ type HttpServer interface {
 // http server for cluster
 type HttpServerCluster interface {
 	Cluster(w http.ResponseWriter, r *http.Request)
-	Welcome(w http.ResponseWriter, r *http.Request)
 }
 
 // http server for crawler
