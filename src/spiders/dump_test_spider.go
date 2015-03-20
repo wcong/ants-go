@@ -7,7 +7,7 @@ import (
 )
 
 func MakeDumpTestSpider() *spiders.Spider {
-	spider := spiders.Spider{}
+	spider := &spiders.Spider{}
 	spider.Name = "dump_test_spider"
 	spider.StartUrls = []string{"http://www.baidu.com/s?wd=2"}
 	spider.ParseMap = make(map[string]func(response *http.Response) ([]*http.Request, error))
@@ -38,5 +38,5 @@ func MakeDumpTestSpider() *spiders.Spider {
 		requestList = append(requestList, request)
 		return requestList, nil
 	}
-	return &spider
+	return spider
 }

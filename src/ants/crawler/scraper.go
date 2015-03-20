@@ -4,6 +4,7 @@ import (
 	"ants/http"
 	"ants/spiders"
 	"log"
+	"strconv"
 	"time"
 )
 
@@ -81,7 +82,7 @@ func (this *Scraper) Scrapy() {
 			time.Sleep(1 * time.Second)
 			continue
 		}
-		log.Println("scrapy:" + response.GoResponse.Request.URL.String())
+		log.Println("start to scrapy:" + response.GoResponse.Request.URL.String())
 		requestList, err := this.SpiderMap[response.SpiderName].ParseMap[response.ParserName](response)
 		scrapeResult := &ScrapeResult{}
 		scrapeResult.Request = response.Request
@@ -94,6 +95,7 @@ func (this *Scraper) Scrapy() {
 				request.Depth += 1
 			}
 			scrapeResult.ScrapedRequests = requestList
+			log.Println("scrapy " + strconv.Itoa(len(requestList)) + " requests from " + response.GoResponse.Request.URL.String())
 		}
 		this.ResultQuene.Push(scrapeResult)
 	}

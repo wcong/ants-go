@@ -11,7 +11,7 @@ go get github.com/go-sql-driver/mysql
 ### install
 
 ``` shell
-go install src/ants/boostracp/ants.go
+go install src/ants/ants/ants.go
 ```
 
 ### run
@@ -20,7 +20,7 @@ go install src/ants/boostracp/ants.go
 cd bin
 ./ants
 ```
-there are some flag you can set,check out the help message
+there are some flags you can set,check out the help message
 ``` shell
 ./ants -h
 ./ants -help

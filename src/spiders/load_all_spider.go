@@ -10,5 +10,7 @@ func LoadAllSpiders() map[string]*spiders.Spider {
 	spiderMap[deadLoopTest.Name] = deadLoopTest
 	dumpTestSpider := MakeDumpTestSpider()
 	spiderMap[dumpTestSpider.Name] = dumpTestSpider
+	zhihuSpider := MakeZhiHuSpider()
+	spiderMap[zhihuSpider.Name] = zhihuSpider
 	return spiderMap
 }

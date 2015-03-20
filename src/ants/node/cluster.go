@@ -5,7 +5,6 @@ import (
 	"ants/http"
 	"ants/util"
 	"encoding/json"
-	"log"
 	"sync"
 )
 
@@ -40,13 +39,6 @@ type ClusterInfo struct {
 	MasterNode *NodeInfo
 }
 
-// receive basic request and record crawled requets
-type RequestStatus struct {
-	CrawledMap   map[string]int // node + num
-	CrawlingMap  map[string]map[string]*http.Request
-	WaitingQuene *crawler.RequestQuene
-}
-
 type Cluster struct {
 	ClusterInfo   *ClusterInfo
 	RequestStatus *RequestStatus
@@ -57,10 +49,7 @@ type Cluster struct {
 
 func NewCluster(settings *util.Settings, localNode *NodeInfo) *Cluster {
 	clusterInfo := &ClusterInfo{CLUSTER_STATUS_INIT, settings.Name, make([]*NodeInfo, 0), localNode, nil}
-	requestStatus := &RequestStatus{}
-	requestStatus.CrawledMap = make(map[string]int)
-	requestStatus.CrawlingMap = make(map[string]map[string]*http.Request)
-	requestStatus.WaitingQuene = crawler.NewRequestQuene()
+	requestStatus := NewRequestStatus()
 	cluster := &Cluster{clusterInfo, requestStatus, new(sync.Mutex), crawler.NewCrawlerStatus(), settings}
 	cluster.ClusterInfo.NodeList = append(cluster.ClusterInfo.NodeList, localNode)
 	return cluster
@@ -137,24 +126,12 @@ func (this *Cluster) AddToCrawlingQuene(request *http.Request) {
 // a request job is done
 // delete it from crawling quene
 // add crawled num
-func (this *Cluster) Crawled(nodeName, requestHashName string) {
-	requestMap, nodeOk := this.RequestStatus.CrawlingMap[nodeName]
-	if !nodeOk {
-		log.Println("none node :" + nodeName)
-		return
-	}
-	request, requestOk := requestMap[requestHashName]
-	if !requestOk {
-		log.Println("none request :" + requestHashName)
-		return
-	}
-	// change RequestStatus
-	this.RequestStatus.CrawledMap[nodeName] += 1
-	delete(requestMap, requestHashName)
+func (this *Cluster) Crawled(scrapyResult *crawler.ScrapeResult) {
+	this.RequestStatus.Crawled(scrapyResult)
 	// change  crawlStatus
-	this.crawlStatus.Crawled(request.SpiderName)
-	if this.crawlStatus.CanWeStop(request.SpiderName) {
-		spiderStatus := this.crawlStatus.CloseSpider(request.SpiderName)
+	this.crawlStatus.Crawled(scrapyResult.Request.SpiderName)
+	if this.crawlStatus.CanWeStop(scrapyResult.Request.SpiderName) {
+		spiderStatus := this.crawlStatus.CloseSpider(scrapyResult.Request.SpiderName)
 		message, _ := json.Marshal(spiderStatus)
 		util.DumpResult(this.settings.LogPath, spiderStatus.Name, string(message))
 	}
@@ -173,15 +150,7 @@ func (this *Cluster) GetMasterName() string {
 
 // is all loop stop
 func (this *Cluster) IsStop() bool {
-	if !this.RequestStatus.WaitingQuene.IsEmpty() {
-		return false
-	}
-	for _, requestMap := range this.RequestStatus.CrawlingMap {
-		if len(requestMap) > 0 {
-			return false
-		}
-	}
-	return true
+	return this.RequestStatus.IsStop()
 }
 
 func (this *Cluster) HasNode(nodeName string) bool {

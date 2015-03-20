@@ -96,7 +96,6 @@ func (this *Node) ReportToMaster(result *crawler.ScrapeResult) {
 // result of crawl request
 // add scraped request to cluster
 // tell cluster request is down
-// close if cluster has no further request and running request
 func (this *Node) AcceptResult(scrapyResult *crawler.ScrapeResult) {
 	if len(scrapyResult.ScrapedRequests) > 0 {
 		for _, request := range scrapyResult.ScrapedRequests {
@@ -106,7 +105,7 @@ func (this *Node) AcceptResult(scrapyResult *crawler.ScrapeResult) {
 		}
 	}
 	// push request first , avoid spider shut down
-	this.Cluster.Crawled(scrapyResult.Request.NodeName, scrapyResult.Request.UniqueName)
+	this.Cluster.Crawled(scrapyResult)
 }
 
 // if there is none request left ,return true

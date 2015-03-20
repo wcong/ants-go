@@ -1,6 +1,7 @@
 package util
 
 // scan spider from spiders dir
+// for now it is useless,go cannot load libary dynamic
 
 import (
 	"go/parser"

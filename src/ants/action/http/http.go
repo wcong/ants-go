@@ -85,7 +85,7 @@ func (this *Router) Crawl(w http.ResponseWriter, r *http.Request) {
 	startResult.Success = result
 	startResult.Spider = spiderName
 	startResult.Message = message
-	encoder, err := json.Marshal(result)
+	encoder, err := json.Marshal(startResult)
 	if err != nil {
 		log.Println(err)
 	}

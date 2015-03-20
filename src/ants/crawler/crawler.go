@@ -7,28 +7,23 @@ import (
 )
 
 // crawler
-// *		contains all spiders
-// *		record crawl status
-// *		all waiting request
-// *		all waiting response for scrape
-// *		download tools
-// *		scrape tools
 type Crawler struct {
-	SpiderMap     map[string]*base_spider.Spider
-	RequestQuene  *RequestQuene
-	ResponseQuene *ResponseQuene
-	Downloader    *Downloader
-	Scraper       *Scraper
+	SpiderMap     map[string]*base_spider.Spider //contains all spiders
+	RequestQuene  *RequestQuene                  //all waiting request
+	ResponseQuene *ResponseQuene                 //all waiting response for scrape
+	Downloader    *Downloader                    //download tools
+	Scraper       *Scraper                       //scrape tools
 }
 
+// resultQuene is for reporter,make sure it is the same ppointer
 func NewCrawler(resultQuene *ResultQuene) *Crawler {
 	requestQuene := NewRequestQuene()
 	responseQuene := NewResponseQuene()
 	spiderMap := spiders.LoadAllSpiders()
 	downloader := NewDownloader(requestQuene, responseQuene)
 	scraper := NewScraper(resultQuene, responseQuene, spiderMap)
-	crawler := Crawler{spiderMap, requestQuene, responseQuene, downloader, scraper}
-	return &crawler
+	crawler := &Crawler{spiderMap, requestQuene, responseQuene, downloader, scraper}
+	return crawler
 }
 
 // start a spider
