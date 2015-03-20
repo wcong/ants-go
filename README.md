@@ -1,8 +1,8 @@
 ### ants-go 
-open source,restful,distribute crawler engine
+open source, restful, distributed crawler engine  
 ### why
-I wrote a crawler engine in python base on scrapy.But sometimes,dynamic language is chaos.
-So I start to write it in a compile language.
+I wrote a crawler engine in python base on scrapy. But sometimes, dynamic language is chaos.
+So I start to write it in a compile language.  
 ### requirement
 ``` shell
 go get github.com/PuerkitoBio/goquery
@@ -11,7 +11,7 @@ go get github.com/go-sql-driver/mysql
 ### install
 
 ``` shell
-go install src/ants/boostracp/ants.go
+go install src/ants/bootstrap/ants.go
 ```
 
 ### run
@@ -20,7 +20,7 @@ go install src/ants/boostracp/ants.go
 cd bin
 ./ants
 ```
-there are some flag you can set,check out the help message
+there are some flag you can set, check out the help message
 ``` shell
 ./ants -h
 ./ants -help
