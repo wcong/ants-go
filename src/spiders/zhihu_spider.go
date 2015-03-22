@@ -19,7 +19,7 @@ func Base(response *http.Response) ([]*http.Request, error) {
 	if !exist {
 		return requestList, nil
 	}
-	userList := [][]string{{"1203316364@qq.com", ""}, {"wc19920415@163.com", ""}}
+	userList := [][]string{{"1203316364@qq.com", "wcong011827011"}, {"wc19920415@163.com", "wcong011827011"}}
 	for index, user := range userList {
 		value := make(url.Values)
 		value.Set("_xsrf", xsrf)
@@ -47,7 +47,7 @@ func GetId(response *http.Response) ([]*http.Request, error) {
 	if err != nil {
 		return nil, err
 	}
-	id, exist := doc.Find("#:0").Attr("href")
+	id, exist := doc.Find(".zu-top-nav-userinfo").Attr("href")
 	if exist {
 		log.Println(id)
 	}

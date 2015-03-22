@@ -94,6 +94,10 @@ func (this *RpcServer) StartSpider(request *action.DistributeRequest, response *
 }
 
 // for master accept crawl result
+// if no more request to crawl stop it
+// notice:
+// *		local request do not go through this way
+// *		close action also start by reporter
 func (this *RpcServer) AcceptResult(request *action.ReportRequest, response *action.ReportResponse) error {
 	this.node.AcceptResult(request.ScrapeResult)
 	if this.node.IsStop() {

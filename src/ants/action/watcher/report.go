@@ -26,10 +26,11 @@ type Reporter struct {
 	ResultQuene *crawler.ResultQuene
 	Node        *node.Node
 	rpcClient   action.RpcClientAnts
+	distributer action.Watcher
 }
 
-func NewReporter(node *node.Node, rpcClient action.RpcClientAnts, resultQuene *crawler.ResultQuene) *Reporter {
-	return &Reporter{REPORT_STATUS_STOPED, resultQuene, node, rpcClient}
+func NewReporter(node *node.Node, rpcClient action.RpcClientAnts, resultQuene *crawler.ResultQuene, distributer action.Watcher) *Reporter {
+	return &Reporter{REPORT_STATUS_STOPED, resultQuene, node, rpcClient, distributer}
 }
 
 func (this *Reporter) Start() {
@@ -100,9 +101,26 @@ func (this *Reporter) Run() {
 		log.Println(result.Request.SpiderName, ":report request to master:", result.Request.GoRequest.URL.String())
 		if this.Node.IsMasterNode() {
 			this.Node.ReportToMaster(result)
+			this.JudgeAndStopNode()
 		} else {
 			this.rpcClient.ReportResult(this.Node.GetMasterName(), result)
 		}
 	}
 	log.Println("stop reporter")
+}
+
+// stop action is start by local report action so put it here
+func (this *Reporter) JudgeAndStopNode() {
+	if !this.Node.IsStop() {
+		return
+	}
+	for _, nodeInfo := range this.Node.GetAllNode() {
+		if this.Node.IsMe(nodeInfo.Name) {
+			this.Node.StopCrawl()
+			this.Stop()
+			this.distributer.Stop()
+		} else {
+			this.rpcClient.StopNode(nodeInfo.Name)
+		}
+	}
 }

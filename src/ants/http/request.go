@@ -2,6 +2,7 @@ package http
 
 import (
 	"ants/util"
+	"encoding/json"
 	"io"
 	Http "net/http"
 	"strconv"
@@ -43,12 +44,8 @@ func NewRequest(method, url, spiderName, parserName string, body io.Reader, cook
 
 // unique sign of q request
 func (this *Request) makeUniqueName() {
-	baseString := this.SpiderName
-	baseString += ":" + this.ParserName
-	baseString += ":" + this.GoRequest.Method
-	baseString += ":" + this.GoRequest.URL.String()
-	baseString += ":" + this.GoRequest.Form.Encode()
-	this.UniqueName = strconv.FormatUint(util.HashString(baseString), 10)
+	baseString, _ := json.Marshal(this)
+	this.UniqueName = strconv.FormatUint(util.HashString(string(baseString)), 10)
 }
 
 func (this *Request) SetNodeName(nodeName string) {
