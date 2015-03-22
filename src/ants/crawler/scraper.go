@@ -92,7 +92,7 @@ func (this *Scraper) Scrapy() {
 		}
 		if requestList != nil {
 			for _, request := range requestList {
-				request.Depth += 1
+				request.Depth = response.Request.Depth + 1
 			}
 			scrapeResult.ScrapedRequests = requestList
 			log.Println(response.SpiderName, ":scrapyed:", strconv.Itoa(len(requestList)), "requests from:", response.GoResponse.Request.URL.String())
