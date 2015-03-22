@@ -3,6 +3,8 @@ open source, restful, distributed crawler engine
 ### why
 I wrote a crawler engine named [ants](https://github.com/wcong/ants) in python base on [scrapy](https://github.com/scrapy/scrapy). But sometimes, dynamic language is chaos.
 So I start to write it in a compile language.  
+### alpha
+just use it for fun by now.
 ### requirement
 ``` shell
 go get github.com/PuerkitoBio/goquery
