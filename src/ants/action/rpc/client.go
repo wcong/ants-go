@@ -99,6 +99,18 @@ func (this *RpcClient) Distribute(nodeName string, request *http.Request) error 
 	return err
 }
 
+func (this *RpcClient) StartSpider(nodeName, spiderName string) error {
+	startRequest := &action.RpcBase{
+		NodeInfo: this.node.NodeInfo,
+	}
+	startResponse := &action.RpcBase{}
+	err := this.connMap[nodeName].Call("RpcServer.StartSpider", startRequest, startResponse)
+	if err != nil {
+		log.Println(err)
+	}
+	return err
+}
+
 // for slave send crawl result to master
 func (this *RpcClient) ReportResult(nodeName string, result *crawler.ScrapeResult) error {
 	reportRequest := &action.ReportRequest{}

@@ -15,15 +15,17 @@ type Router struct {
 	mux         map[string]func(http.ResponseWriter, *http.Request)
 	reporter    action.Watcher
 	distributer action.Watcher
+	rpcClient   action.RpcClientAnts
 }
 
-func NewRouter(node *Node.Node, reporter, distributer action.Watcher) *Router {
+func NewRouter(node *Node.Node, reporter, distributer action.Watcher, rpcClient action.RpcClientAnts) *Router {
 	mux := make(map[string]func(http.ResponseWriter, *http.Request))
 	router := &Router{
 		node:        node,
 		mux:         mux,
 		reporter:    reporter,
 		distributer: distributer,
+		rpcClient:   rpcClient,
 	}
 	mux["/"] = router.Welcome
 	mux["/cluster"] = router.Cluster
@@ -75,12 +77,26 @@ func (this *Router) Spiders(w http.ResponseWriter, r *http.Request) {
 	w.Write(encoder)
 }
 
+// try to start spider
+// if ok
+// *		tell other node start spider
+// *		start reporter and distribute in this node
 func (this *Router) Crawl(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	spiderName := r.Form["spider"][0]
 	now := time.Now().Format("2006-01-02 15:04:05")
 	startResult := &StartSpiderResult{}
 	result, message := this.node.StartSpider(spiderName)
+	if result {
+		log.Println("start spider:", spiderName)
+		for _, nodeInfo := range this.node.GetAllNode() {
+			if !this.node.IsMe(nodeInfo.Name) {
+				this.rpcClient.StartSpider(nodeInfo.Name, spiderName)
+			}
+		}
+		go this.reporter.Start()
+		go this.distributer.Start()
+	}
 	startResult.Time = now
 	startResult.Success = result
 	startResult.Spider = spiderName

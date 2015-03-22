@@ -64,5 +64,6 @@ func MakeZhiHuSpider() *spiders.Spider {
 	zhihuSpider.ParseMap = parseMap
 	parseMap[spiders.BASE_PARSE_NAME] = Base
 	parseMap["Index"] = Index
+	parseMap["GetId"] = GetId
 	return zhihuSpider
 }

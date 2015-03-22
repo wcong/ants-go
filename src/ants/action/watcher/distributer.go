@@ -4,6 +4,7 @@ import (
 	"ants/action"
 	"ants/http"
 	"ants/node"
+	"log"
 	"time"
 )
 
@@ -70,6 +71,7 @@ func (this *Distributer) Start() {
 
 // dead loop cluster pop request
 func (this *Distributer) Run() {
+	log.Println("start distributer")
 	for {
 		if this.Status == DISTRIBUTE_STOP {
 			this.Status = DISTRIBUTE_STOPED
@@ -85,12 +87,14 @@ func (this *Distributer) Run() {
 			continue
 		}
 		this.Distribute(request)
+		log.Println(request.SpiderName, ":distribute:", request.NodeName, ":request:", request.GoRequest.URL.String())
 		if this.Node.IsMe(request.NodeName) {
 			this.Node.DistributeRequest(request)
 		} else {
 			this.RpcClient.Distribute(request.NodeName, request)
 		}
 	}
+	log.Println("stop distributer")
 }
 
 // if cookiejar > 0 means it require cookie context ,so we should send it to where it come from

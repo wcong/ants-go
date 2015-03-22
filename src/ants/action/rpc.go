@@ -32,6 +32,7 @@ type RpcServerCluster interface {
 	LetMeIn(request *LeftMeInRequest, response *LeftMeInResponse) error
 	Connect(request *RpcBase, response *RpcBase) error
 	StopNode(request *StopRequest, response *StopResponse) error
+	StartSpider(request *DistributeRequest, response *DistributeReqponse) error
 }
 
 /*
@@ -57,6 +58,7 @@ type RpcClient interface {
 type RpcClientCluster interface {
 	LetMeIn(ip string, port int) error
 	Connect(ip string, port int) error
+	StartSpider(nodeName, spiderName string) error
 }
 
 /*

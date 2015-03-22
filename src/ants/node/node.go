@@ -23,7 +23,7 @@ type Node struct {
 
 func NewNode(settings *util.Settings, resultQuene *crawler.ResultQuene) *Node {
 	ip := util.GetLocalIp()
-	name := strconv.FormatUint(util.HashString(ip+strconv.Itoa(settings.TcpPort)), 10)
+	name := ip + ":" + strconv.Itoa(settings.TcpPort)
 	nodeInfo := &NodeInfo{name, ip, settings.TcpPort, settings}
 	crawler := crawler.NewCrawler(resultQuene)
 	cluster := NewCluster(settings, nodeInfo)
@@ -51,14 +51,20 @@ func (this *Node) AddMasterNode(masterNodeInfo *NodeInfo) {
 	}
 }
 
-// start a spider if not deap loop distribute ,start it
-// start a reporter report the crawl result
+// if spider is running return false
+// tell cluster start a spider
+// get start requests, push them to cluster request
+// try to start the crawler,
 func (this *Node) StartSpider(spiderName string) (bool, string) {
 	if this.Cluster.IsSpiderRunning(spiderName) {
 		return false, "spider is running"
 	}
-	this.Crawler.StartSpider(spiderName)
 	this.Cluster.StartSpider(spiderName)
+	startRequest := this.Crawler.GetStartRequest(spiderName)
+	for _, request := range startRequest {
+		this.Cluster.AddRequest(request)
+	}
+	this.Crawler.Start()
 	return true, "started"
 }
 
@@ -113,8 +119,8 @@ func (this *Node) IsStop() bool {
 	return this.Cluster.IsStop()
 }
 
-// close all node
-func (this *Node) GetAllNodeForClose() []*NodeInfo {
+// get all node info
+func (this *Node) GetAllNode() []*NodeInfo {
 	return this.Cluster.ClusterInfo.NodeList
 }
 

@@ -4,6 +4,7 @@ import (
 	"ants/action"
 	"ants/crawler"
 	"ants/node"
+	"log"
 	"time"
 )
 
@@ -75,6 +76,7 @@ func (this *Reporter) IsStop() bool {
 // if scraped new request  set node name local node name
 // send it to master
 func (this *Reporter) Run() {
+	log.Println("start reporter")
 	for {
 		if this.IsPause() {
 			time.Sleep(1 * time.Second)
@@ -95,10 +97,12 @@ func (this *Reporter) Run() {
 				request.NodeName = nodeName
 			}
 		}
+		log.Println(result.Request.SpiderName, ":report request to master:", result.Request.GoRequest.URL.String())
 		if this.Node.IsMasterNode() {
 			this.Node.ReportToMaster(result)
 		} else {
 			this.rpcClient.ReportResult(this.Node.GetMasterName(), result)
 		}
 	}
+	log.Println("stop reporter")
 }

@@ -76,7 +76,7 @@ func (this *RpcServer) Connect(request *action.RpcBase, response *action.RpcBase
 }
 
 func (this *RpcServer) StopNode(request *action.StopRequest, response *action.StopResponse) error {
-	this.node.StopCrawl()
+	this.stopNode()
 	return nil
 }
 
@@ -86,17 +86,32 @@ func (this *RpcServer) AcceptRequest(request *action.DistributeRequest, response
 	return nil
 }
 
+// start spider for slave
+// for now just start reporter
+func (this *RpcServer) StartSpider(request *action.DistributeRequest, response *action.DistributeReqponse) error {
+	this.reporter.Start()
+	return nil
+}
+
 // for master accept crawl result
 func (this *RpcServer) AcceptResult(request *action.ReportRequest, response *action.ReportResponse) error {
 	this.node.AcceptResult(request.ScrapeResult)
 	if this.node.IsStop() {
-		for _, nodeInfo := range this.node.GetAllNodeForClose() {
+		for _, nodeInfo := range this.node.GetAllNode() {
 			if this.node.IsMe(nodeInfo.Name) {
-				this.node.StopCrawl()
+				this.stopNode()
 			} else {
 				this.rpcClient.StopNode(nodeInfo.Name)
 			}
 		}
 	}
 	return nil
+}
+
+// stop the node
+// crawler ,reporter and distributer
+func (this *RpcServer) stopNode() {
+	this.node.StopCrawl()
+	this.reporter.Stop()
+	this.distributer.Stop()
 }

@@ -76,7 +76,7 @@ func main() {
 	var rpcClient action.RpcClientAnts = rpc.NewRpcClient(Node)
 	var reporter, distributer action.Watcher = watcher.NewReporter(Node, rpcClient, resultQuene), watcher.NewDistributer(Node, rpcClient)
 	rpc.NewRpcServer(Node, setting.TcpPort, rpcClient, reporter, distributer)
-	router := AHttp.NewRouter(Node, reporter, distributer)
+	router := AHttp.NewRouter(Node, reporter, distributer, rpcClient)
 	httpServer := http.NewHttpServer(setting, router)
 	httpServer.Start(wg)
 	initCluster(setting, rpcClient, Node)

@@ -1,8 +1,8 @@
 package crawler
 
 import (
+	"ants/http"
 	base_spider "ants/spiders"
-	"log"
 	"spiders"
 )
 
@@ -26,15 +26,10 @@ func NewCrawler(resultQuene *ResultQuene) *Crawler {
 	return crawler
 }
 
-// start a spider
-func (this *Crawler) StartSpider(spiderName string) {
-	log.Println("start to crawl spider " + spiderName)
+func (this *Crawler) GetStartRequest(spiderName string) []*http.Request {
 	spider := this.SpiderMap[spiderName]
 	startRequests := spider.MakeStartRequests()
-	for _, request := range startRequests {
-		this.RequestQuene.Push(request)
-	}
-	this.Start()
+	return startRequests
 }
 
 func (this *Crawler) Start() {
