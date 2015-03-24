@@ -4,6 +4,7 @@ import (
 	"ants/http"
 	"ants/spiders"
 	"github.com/PuerkitoBio/goquery"
+	"io/ioutil"
 	"log"
 	"net/url"
 	"strings"
@@ -43,6 +44,8 @@ func Index(response *http.Response) ([]*http.Request, error) {
 	return requestList, nil
 }
 func GetId(response *http.Response) ([]*http.Request, error) {
+	html, _ := ioutil.ReadAll(response.GoResponse.Body)
+	log.Println(string(html))
 	doc, err := goquery.NewDocumentFromReader(response.GoResponse.Body)
 	if err != nil {
 		return nil, err

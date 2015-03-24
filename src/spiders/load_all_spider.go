@@ -12,5 +12,7 @@ func LoadAllSpiders() map[string]*spiders.Spider {
 	spiderMap[dumpTestSpider.Name] = dumpTestSpider
 	zhihuSpider := MakeZhiHuSpider()
 	spiderMap[zhihuSpider.Name] = zhihuSpider
+	muiltiplySpiders := MakeMuiltiplySpiders()
+	spiderMap[muiltiplySpiders.Name] = muiltiplySpiders
 	return spiderMap
 }

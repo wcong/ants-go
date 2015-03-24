@@ -79,13 +79,18 @@ func (this *Downloader) Download() {
 			time.Sleep(1 * time.Second)
 			continue
 		}
-		log.Println("depth:", request.Depth, "download url:", request.GoRequest.URL.String())
-		client := this.ClientList[0]
-		response, err := client.GoClient.Do(request.GoRequest)
-		if err != nil {
-			log.Println(err)
-		}
-		Response := http.NewResponse(response, request, request.SpiderName, request.ParserName, request.NodeName)
-		this.ResponseQuene.Push(Response)
+		go this.downloadAndPush(request)
 	}
+}
+
+// download it and push in goroutine
+func (this *Downloader) downloadAndPush(request *http.Request) {
+	log.Println(request.SpiderName, "depth:", request.Depth, "download url:", request.GoRequest.URL.String())
+	client := this.ClientList[0]
+	response, err := client.GoClient.Do(request.GoRequest)
+	if err != nil {
+		log.Println(err)
+	}
+	Response := http.NewResponse(response, request, request.SpiderName, request.ParserName, request.NodeName)
+	this.ResponseQuene.Push(Response)
 }

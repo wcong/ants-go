@@ -5,6 +5,10 @@ I wrote a crawler engine named [ants](https://github.com/wcong/ants) in python b
 So I start to write it in a compile language.  
 ### alpha
 just use it for fun by now.
+### gopath
+``` shell
+export GOPATH=$GOPATH;PATH/TO/ants-go
+```
 ### requirement
 ``` shell
 go get github.com/PuerkitoBio/goquery

@@ -3,7 +3,10 @@ package crawler
 import (
 	"ants/http"
 	"container/list"
+	"sync"
 )
+
+var mutex sync.Mutex
 
 type RequestQuene struct {
 	RequestList *list.List
@@ -43,8 +46,12 @@ func NewResponseQuene() *ResponseQuene {
 }
 
 func (this *ResponseQuene) Push(response *http.Response) {
+	mutex.Lock()
 	this.ResponseList.PushBack(response)
+	mutex.Unlock()
 }
+
+// for now only one routine pop the request,so do not add lock
 func (this *ResponseQuene) Pop() *http.Response {
 	element := this.ResponseList.Front()
 	if element == nil {
@@ -65,7 +72,9 @@ func NewResultQuene() *ResultQuene {
 	return resultQuene
 }
 func (this *ResultQuene) Push(scrapeResult *ScrapeResult) {
+	mutex.Lock()
 	this.ResultList.PushBack(scrapeResult)
+	mutex.Unlock()
 }
 func (this *ResultQuene) Pop() *ScrapeResult {
 	element := this.ResultList.Front()

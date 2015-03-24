@@ -82,21 +82,36 @@ func (this *Scraper) Scrapy() {
 			time.Sleep(1 * time.Second)
 			continue
 		}
-		log.Println(response.SpiderName, ":start to scrapy:", response.GoResponse.Request.URL.String())
-		requestList, err := this.SpiderMap[response.SpiderName].ParseMap[response.ParserName](response)
-		scrapeResult := &ScrapeResult{}
-		scrapeResult.Request = response.Request
-		if err != nil {
-			log.Println(err)
-			scrapeResult.CrawlResult = err.Error()
-		}
-		if requestList != nil {
-			for _, request := range requestList {
-				request.Depth = response.Request.Depth + 1
-			}
-			scrapeResult.ScrapedRequests = requestList
-			log.Println(response.SpiderName, ":scrapyed:", strconv.Itoa(len(requestList)), "requests from:", response.GoResponse.Request.URL.String())
-		}
-		this.ResultQuene.Push(scrapeResult)
+		go this.scrapyAndPush(response)
 	}
+}
+
+// scrapy and push in go routine
+func (this *Scraper) scrapyAndPush(response *http.Response) {
+	log.Println(response.SpiderName, ":start to scrapy:", response.Request.GoRequest.URL.String())
+	defer func() {
+		err := recover()
+		if err != nil {
+			log.Print(response.SpiderName, err)
+			scrapeResult := &ScrapeResult{}
+			scrapeResult.Request = response.Request
+			scrapeResult.CrawlResult = err.(error).Error()
+			this.ResultQuene.Push(scrapeResult)
+		}
+	}()
+	requestList, err := this.SpiderMap[response.SpiderName].ParseMap[response.ParserName](response)
+	scrapeResult := &ScrapeResult{}
+	scrapeResult.Request = response.Request
+	if err != nil {
+		log.Println(err)
+		scrapeResult.CrawlResult = err.Error()
+	}
+	if requestList != nil {
+		for _, request := range requestList {
+			request.Depth = response.Request.Depth + 1
+		}
+		scrapeResult.ScrapedRequests = requestList
+		log.Println(response.SpiderName, ":scrapyed:", strconv.Itoa(len(requestList)), "requests from:", response.GoResponse.Request.URL.String())
+	}
+	this.ResultQuene.Push(scrapeResult)
 }
