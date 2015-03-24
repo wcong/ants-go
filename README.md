@@ -7,7 +7,7 @@ So I start to write it in a compile language.
 just use it for fun by now.
 ### gopath
 ``` shell
-export GOPATH=$GOPATH;PATH/TO/ants-go
+export GOPATH=PATH/TO/ants-go
 ```
 ### requirement
 ``` shell
