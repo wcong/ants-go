@@ -3,3 +3,4 @@ src/code.google.com/
 src/golang.org/
 src/github.com/
 pkg
+log/
