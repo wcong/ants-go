@@ -1,8 +1,21 @@
-### ants-go 
-open source, restful, distributed crawler engine  
-### why
+### ants-go
+open source, restful, distributed crawler engine
+### help me
+I feel confused sometimes when I am designing the framework of ants or writing code in golang.
+So 
+*	if there are something wrong in the source code,please let me know.
+*	If you have better idea of ants-go,please let me know.
+### design of ants-go
+##### ants
 I wrote a crawler engine named [ants](https://github.com/wcong/ants) in python base on [scrapy](https://github.com/scrapy/scrapy). But sometimes, dynamic language is chaos.
-So I start to write it in a compile language.  
+So I start to write it in a compile language. 
+##### scrapy
+I design the crawler framework  by imitating  [scrapy](https://github.com/scrapy/scrapy).
+such as downloader,scraper,and the way user write customize spider,
+by in a compile way
+##### elasticsearch
+I design my distributed architecture by imitating [elasticsearch](https://github.com/elasticsearch/elasticsearch).
+it spire me to do a engine for distributed crawler
 ### gopath
 ``` shell
 export GOPATH=PATH/TO/ants-go
@@ -54,4 +67,3 @@ there are some flags you can set,check out the help message
 2.	write your spiders follow the example *deap_loop_spider.go* or go to the [spider page](./SPIDER.md)
 3.	add you spider to spiderMap,follow the example in *LoadAllSpiders* in *load_all_spider.go*
 4.	install again
-

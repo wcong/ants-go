@@ -12,7 +12,7 @@ import (
 what a request would do
 *	basic request
 *	global unique key
-*   cookie jar index
+*    cookie jar index
 *	spider belong to
 *	parse belong to
 */
