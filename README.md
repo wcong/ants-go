@@ -7,7 +7,7 @@ So I start to write it in a compile language.
 ##### scrapy
 I design the crawler framework  by imitating  [scrapy](https://github.com/scrapy/scrapy).
 such as downloader,scraper,and the way user write customize spider,
-by in a compile way
+but in a compile way
 ##### elasticsearch
 I design my distributed architecture by imitating [elasticsearch](https://github.com/elasticsearch/elasticsearch).
 it spire me to do a engine for distributed crawler
