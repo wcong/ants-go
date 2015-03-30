@@ -24,6 +24,7 @@ go get github.com/go-sql-driver/mysql
 
 ``` shell
 go get github.com/wcong/ants-go
+go install github.com/wcong/ants-go
 ```
 
 ### run
