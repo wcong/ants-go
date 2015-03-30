@@ -23,14 +23,14 @@ go get github.com/go-sql-driver/mysql
 ### install
 
 ``` shell
-go install src/ants/ants/ants.go
+go get github.com/wcong/ants-go
 ```
 
 ### run
 
 ``` shell
 cd bin
-./ants
+./ants-go
 ```
 
 #### cluster in one computer
@@ -40,21 +40,21 @@ one node,use the default port tcp 8300 http 8200
 
 ``` shell
 cd bin
-./ants
+./ants-go
 ```
 
 the other node set tcp port and http port
 
 ``` shell
 cd bin
-./ants -tcp 9300 -http 9200
+./ants-go -tcp 9300 -http 9200
 ```
 #### flags
 there are some flags you can set,check out the help message
 
 ``` shell
-./ants -h
-./ants -help
+./ants-go -h
+./ants-go -help
 ```
 
 ### Customize spider
