@@ -11,10 +11,6 @@ but in a compile way
 ##### elasticsearch
 I design my distributed architecture by imitating [elasticsearch](https://github.com/elasticsearch/elasticsearch).
 it spire me to do a engine for distributed crawler
-### gopath
-``` shell
-export GOPATH=PATH/TO/ants-go
-```
 ### requirement
 ``` shell
 go get github.com/PuerkitoBio/goquery
