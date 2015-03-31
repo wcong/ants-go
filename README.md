@@ -55,7 +55,7 @@ there are some flags you can set,check out the help message
 ```
 
 ### Customize spider
-1.	go to *src/spiders*
+1.	go to *spiders*
 2.	write your spiders follow the example *deap_loop_spider.go* or go to the [spider page](./SPIDER.md)
 3.	add you spider to spiderMap,follow the example in *LoadAllSpiders* in *load_all_spider.go*
 4.	install again
