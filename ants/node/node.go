@@ -149,6 +149,16 @@ func (this *Node) IsMasterNode() bool {
 	return this.Cluster.IsMasterNode()
 }
 
+// first of all this is master node
+// parse crawler
+// remove it from cluster
+// unparse crawler
+func (this *Node) DeleteDeadNode(nodeName string) {
+	this.PauseCrawl()
+	this.Cluster.DeleteDeadNode(nodeName)
+	this.UnpauseCrawl()
+}
+
 func (this *Node) Join() {
 	this.Cluster.Join()
 	this.PauseCrawl()

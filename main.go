@@ -30,8 +30,7 @@ func MakeSettings() *util.Settings {
 	initFlag(settings)
 	flag.Parse()
 	if settings.ConfigFile != "" {
-		pwd, _ := os.Getwd()
-		util.LoadSettingFromFile(pwd+"/"+settings.ConfigFile, settings)
+		util.LoadSettingFromFile(settings.ConfigFile, settings)
 	}
 	return settings
 }
@@ -81,5 +80,6 @@ func main() {
 	httpServer := http.NewHttpServer(setting, router)
 	httpServer.Start(wg)
 	initCluster(setting, rpcClient, Node)
+	rpcClient.Start()
 	wg.Wait()
 }

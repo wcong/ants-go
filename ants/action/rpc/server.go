@@ -51,6 +51,11 @@ func (this *RpcServer) start() {
 	go this.server()
 }
 
+// is server alive
+func (this *RpcServer) IsAlive(request *action.RpcBase, response *action.RpcBase) error {
+	return nil
+}
+
 // handle the join request,
 // if this is the master node ,let it join and connect to server
 // else send it  master node ,let it talk to master

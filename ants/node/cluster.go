@@ -8,21 +8,11 @@ import (
 	"sync"
 )
 
-/*
-what a cluster would do
-* 	init by local node
-*	add a node
-*	choose a master node
-*	distribute a request
-* 	accept crawl result
-*	add a request
-*/
-
 // cluster status
 // *		init:where every thing have init
 // *		join:try to connect to other node ,if not make itself master,else ,get other master
 // *		election(option):when circle is builded a start to elect a master
-// * 	ready:ready to start crawl
+// * 		ready:ready to start crawl
 const (
 	CLUSTER_STATUS_INIT = iota
 	CLUSTER_STATUS_JOIN
@@ -58,6 +48,27 @@ func NewCluster(settings *util.Settings, localNode *NodeInfo) *Cluster {
 // get crawl status
 func (this *Cluster) CrawlStatus() *crawler.CrawlerStatus {
 	return this.crawlStatus
+}
+
+func (this *Cluster) DeleteDeadNode(nodeName string) {
+	this.mutex.Lock()
+	this.removeNode(nodeName)
+	this.RequestStatus.DeleteDeadNode(nodeName)
+	this.mutex.Unlock()
+}
+
+// of course it is not local node
+func (this *Cluster) removeNode(nodeName string) {
+	deleteIndex := -1
+	for index, node := range this.ClusterInfo.NodeList {
+		if node.Name == nodeName {
+			deleteIndex = index
+		}
+	}
+	if deleteIndex >= 0 {
+		oldNodeList := this.ClusterInfo.NodeList
+		this.ClusterInfo.NodeList = append(oldNodeList[0:deleteIndex], oldNodeList[deleteIndex+1:len(oldNodeList)]...)
+	}
 }
 
 // is local node master node

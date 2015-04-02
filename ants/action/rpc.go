@@ -15,6 +15,7 @@ import (
 *	RpcServer
 **/
 type RpcServer interface {
+	IsAlive(request *RpcBase, response *RpcBase) error
 }
 
 /*
@@ -50,6 +51,8 @@ type RpcServerAnts interface {
 **/
 type RpcClient interface {
 	Dial(ip string, port int) (*rpc.Client, error)
+	Detect() // if client connection is down
+	Start()  // start dead loop for detect
 }
 
 /*

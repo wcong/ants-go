@@ -44,6 +44,16 @@ func (this *RequestStatus) Crawled(scrapyResult *crawler.ScrapeResult) {
 	mutex.Unlock()
 }
 
+// remove request from crawlingmap for dead node
+// add those requests to waiting quenu
+func (this *RequestStatus) DeleteDeadNode(nodeName string) {
+	crawlingMap := this.CrawlingMap[nodeName]
+	for _, request := range crawlingMap {
+		this.WaitingQuene.Push(request)
+	}
+	delete(this.CrawlingMap, nodeName)
+}
+
 // is all loop stop
 func (this *RequestStatus) IsStop() bool {
 	if !this.WaitingQuene.IsEmpty() {

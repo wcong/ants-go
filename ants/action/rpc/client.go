@@ -9,6 +9,7 @@ import (
 	"net/rpc"
 	"net/rpc/jsonrpc"
 	"strconv"
+	"time"
 )
 
 type RpcClient struct {
@@ -52,6 +53,35 @@ func (this *RpcClient) LetMeIn(ip string, port int) error {
 		this.LetMeIn(response.NodeInfo.Ip, response.NodeInfo.Port)
 	}
 	return err
+}
+func (this *RpcClient) Start() {
+	go func() {
+		for {
+			this.Detect()
+			time.Sleep(2 * time.Second)
+		}
+	}()
+}
+
+// judge if node is down
+func (this *RpcClient) Detect() {
+	request := new(action.RpcBase)
+	response := new(action.RpcBase)
+	for key, conn := range this.connMap {
+		err := conn.Call("RpcServer.IsAlive", request, response)
+		if err != nil {
+			log.Println(err)
+			log.Println("node:", key, "is dead ,so remove it")
+			delete(this.connMap, key)
+			if this.node.IsMasterNode() {
+				this.node.DeleteDeadNode(key)
+			}
+		}
+	}
+}
+
+func (this *RpcClient) SyncClusterInfo() {
+
 }
 
 // for now it is for master connect to slave
