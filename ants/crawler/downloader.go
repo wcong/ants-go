@@ -95,10 +95,14 @@ func (this *Downloader) Download() {
 func (this *Downloader) downloadAndPush(request *http.Request) {
 	log.Println(request.SpiderName, "depth:", request.Depth, "download url:", request.GoRequest.URL.String())
 	client := this.getClient(request)
+	if request.Proxy != "" {
+		client.SetProxy(request.Proxy)
+	}
 	response, err := client.GoClient.Do(request.GoRequest)
 	if err != nil {
 		log.Println(err)
 	}
+	client.ClearProxy()
 	Response := http.NewResponse(response, request, request.SpiderName, request.ParserName, request.NodeName)
 	this.ResponseQuene.Push(Response)
 }

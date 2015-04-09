@@ -24,6 +24,7 @@ type Request struct {
 	ParserName string // crawler will send the response to named parseFunction
 	NodeName   string
 	Depth      int
+	Proxy      string // proxy settings,just setting the proxy,downloader will take care of rest thing
 }
 
 func NewRequest(method, url, spiderName, parserName string, body io.Reader, cookieJar int) (*Request, error) {

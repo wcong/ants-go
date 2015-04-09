@@ -27,3 +27,6 @@ func (this *Client) SetProxy(urlString string) {
 	}
 	this.GoClient.Transport = transport
 }
+func (this *Client) ClearProxy() {
+	this.GoClient.Transport = nil
+}
