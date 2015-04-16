@@ -1,5 +1,10 @@
 ### ants-go
 open source, restful, distributed crawler engine
+### comming up
+
+* Persistence
+* Dynamic
+
 ### design of ants-go
 ##### ants
 I wrote a crawler engine named [ants](https://github.com/wcong/ants) in python base on [scrapy](https://github.com/scrapy/scrapy). But sometimes, dynamic language is chaos.
