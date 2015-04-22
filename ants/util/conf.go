@@ -8,23 +8,25 @@ import (
 
 // settings
 type Settings struct {
-	HttpPort        int
-	MulticastEnable bool
-	Name            string
-	NodeList        []string
-	TcpPort         int
-	LogPath         string
-	ConfigFile      string
+	HttpPort         int
+	MulticastEnable  bool
+	Name             string
+	NodeList         []string
+	TcpPort          int
+	LogPath          string
+	ConfigFile       string
+	DownloadInterval int
 }
 
 func NewSettings() *Settings {
 	return &Settings{
-		HttpPort:        8200,
-		MulticastEnable: false,
-		Name:            "guess",
-		NodeList:        []string{"127.0.0.1:8300"},
-		TcpPort:         8300,
-		LogPath:         "../log",
+		HttpPort:         8200,
+		MulticastEnable:  false,
+		Name:             "guess",
+		NodeList:         []string{"127.0.0.1:8300"},
+		TcpPort:          8300,
+		LogPath:          "../log",
+		DownloadInterval: 0,
 	}
 }
 

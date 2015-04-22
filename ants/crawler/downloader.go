@@ -19,17 +19,18 @@ const (
 
 // downloader tools
 type Downloader struct {
-	Status        int
-	RequestQuene  *RequestQuene
-	ResponseQuene *ResponseQuene
-	ClientList    []*http.Client
+	Status           int
+	RequestQuene     *RequestQuene
+	ResponseQuene    *ResponseQuene
+	ClientList       []*http.Client
+	DownloadInterval int
 }
 
-func NewDownloader(resuqstQuene *RequestQuene, responseQuene *ResponseQuene) *Downloader {
+func NewDownloader(resuqstQuene *RequestQuene, responseQuene *ResponseQuene, downloadInterval int) *Downloader {
 	clientList := make([]*http.Client, 0)
 	client := http.NewClient()
 	clientList = append(clientList, client)
-	return &Downloader{DOWNLOADER_STATUS_STOPED, resuqstQuene, responseQuene, clientList}
+	return &Downloader{DOWNLOADER_STATUS_STOPED, resuqstQuene, responseQuene, clientList, downloadInterval}
 }
 
 // DOWNLOADER_STATUS_STOPED means the dead loop is actually dead
@@ -81,6 +82,9 @@ func (this *Downloader) Download() {
 		if this.Status == DOWNLOADER_STATUS_STOP {
 			this.Status = DOWNLOADER_STATUS_STOPED
 			break
+		}
+		if this.DownloadInterval > 0 {
+			time.Sleep(time.Duration(this.DownloadInterval) * time.Second)
 		}
 		request := this.RequestQuene.Pop()
 		if request == nil {

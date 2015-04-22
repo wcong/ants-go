@@ -3,6 +3,7 @@ package crawler
 import (
 	"github.com/wcong/ants-go/ants/http"
 	base_spider "github.com/wcong/ants-go/ants/spiders"
+	"github.com/wcong/ants-go/ants/util"
 	"github.com/wcong/ants-go/spiders"
 )
 
@@ -16,11 +17,11 @@ type Crawler struct {
 }
 
 // resultQuene is for reporter,make sure it is the same ppointer
-func NewCrawler(resultQuene *ResultQuene) *Crawler {
+func NewCrawler(resultQuene *ResultQuene, settings *util.Settings) *Crawler {
 	requestQuene := NewRequestQuene()
 	responseQuene := NewResponseQuene()
 	spiderMap := spiders.LoadAllSpiders()
-	downloader := NewDownloader(requestQuene, responseQuene)
+	downloader := NewDownloader(requestQuene, responseQuene, settings.DownloadInterval)
 	scraper := NewScraper(resultQuene, responseQuene, spiderMap)
 	crawler := &Crawler{spiderMap, requestQuene, responseQuene, downloader, scraper}
 	return crawler

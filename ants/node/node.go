@@ -25,7 +25,7 @@ func NewNode(settings *util.Settings, resultQuene *crawler.ResultQuene) *Node {
 	ip := util.GetLocalIp()
 	name := ip + ":" + strconv.Itoa(settings.TcpPort)
 	nodeInfo := &NodeInfo{name, ip, settings.TcpPort, settings}
-	crawler := crawler.NewCrawler(resultQuene)
+	crawler := crawler.NewCrawler(resultQuene, settings)
 	cluster := NewCluster(settings, nodeInfo)
 	return &Node{
 		NodeInfo: nodeInfo,
