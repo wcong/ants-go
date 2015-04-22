@@ -21,6 +21,7 @@ import (
 func initFlag(settings *util.Settings) {
 	flag.IntVar(&settings.TcpPort, "tcp", settings.TcpPort, "tcp port")
 	flag.IntVar(&settings.HttpPort, "http", settings.HttpPort, "http port")
+	flag.IntVar(&settings.DownloadInterval, "di", settings.DownloadInterval, "Download Interval in second")
 	flag.StringVar(&settings.ConfigFile, "c", settings.ConfigFile, "config file path")
 }
 
