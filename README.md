@@ -3,7 +3,7 @@ open source, restful, distributed crawler engine
 ### comming up
 
 * Persistence
-* Dynamic
+* Dynamic Master
 
 ### design of ants-go
 ##### ants
