@@ -35,6 +35,25 @@ cd bin
 ./ants-go
 ```
 
+#### check cluster status
+
+```
+curl 'http://localhost:8200/cluster'
+```
+
+#### get all spiders
+
+```
+curl 'http://localhost:8200/spiders'
+```
+
+#### start a spider
+
+```
+curl 'http://localhost:8200/crawl?spider=spiderName'
+```
+
+
 #### cluster in one computer
 to test cluster in one computer,you can run it from different port in different terminal
 
