@@ -105,6 +105,16 @@ func (this *RpcServer) StartSpider(request *action.DistributeRequest, response *
 // *		close action also start by reporter
 func (this *RpcServer) AcceptResult(request *action.ReportRequest, response *action.ReportResponse) error {
 	this.node.AcceptResult(request.ScrapeResult)
+	spiderName := request.ScrapeResult.Request.SpiderName
+	if this.node.CanWeStopSpider(spiderName) {
+		for _, nodeInfo := range this.node.GetAllNode() {
+			if this.node.IsMe(nodeInfo.Name) {
+				this.node.CloseSpider(spiderName)
+			} else {
+				this.rpcClient.CloseSpider(nodeInfo.Name, spiderName)
+			}
+		}
+	}
 	if this.node.IsStop() {
 		for _, nodeInfo := range this.node.GetAllNode() {
 			if this.node.IsMe(nodeInfo.Name) {
@@ -123,4 +133,9 @@ func (this *RpcServer) stopNode() {
 	this.node.StopCrawl()
 	this.reporter.Stop()
 	this.distributer.Stop()
+}
+
+func (this *RpcServer) CloseSpider(request *action.CloseSpiderRequest, response *action.CloseSpiderResponse) error {
+	this.node.CloseSpider(request.SpiderName)
+	return nil
 }

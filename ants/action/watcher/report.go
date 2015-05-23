@@ -101,7 +101,7 @@ func (this *Reporter) Run() {
 		log.Println(result.Request.SpiderName, ":report request to master:", result.Request.GoRequest.URL.String())
 		if this.Node.IsMasterNode() {
 			this.Node.ReportToMaster(result)
-			this.JudgeAndStopNode()
+			this.JudgeAndStopNode(result)
 		} else {
 			this.rpcClient.ReportResult(this.Node.GetMasterName(), result)
 		}
@@ -110,7 +110,17 @@ func (this *Reporter) Run() {
 }
 
 // stop action is start by local report action so put it here
-func (this *Reporter) JudgeAndStopNode() {
+func (this *Reporter) JudgeAndStopNode(result *crawler.ScrapeResult) {
+	spiderName := result.Request.SpiderName
+	if this.Node.CanWeStopSpider(spiderName) {
+		for _, nodeInfo := range this.Node.GetAllNode() {
+			if this.Node.IsMe(nodeInfo.Name) {
+				this.Node.CloseSpider(spiderName)
+			} else {
+				this.rpcClient.CloseSpider(nodeInfo.Name, spiderName)
+			}
+		}
+	}
 	if !this.Node.IsStop() {
 		return
 	}

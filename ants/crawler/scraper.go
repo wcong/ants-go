@@ -92,7 +92,7 @@ func (this *Scraper) scrapyAndPush(response *http.Response) {
 	defer func() {
 		err := recover()
 		if err != nil {
-			log.Print(response.SpiderName, err)
+			log.Println(response.SpiderName, " ", err)
 			scrapeResult := &ScrapeResult{}
 			scrapeResult.Request = response.Request
 			scrapeResult.CrawlResult = err.(error).Error()

@@ -24,6 +24,7 @@ type RpcServer interface {
 type RpcServerCrawl interface {
 	AcceptRequest(request *DistributeRequest, response *DistributeReqponse) error
 	AcceptResult(request *ReportRequest, response *ReportResponse) error
+	CloseSpider(request *CloseSpiderRequest, response *CloseSpiderResponse) error
 }
 
 /*
@@ -71,6 +72,7 @@ type RpcClientCrawl interface {
 	StopNode(nodeName string) error
 	Distribute(nodeName string, request *http.Request) error
 	ReportResult(nodeName string, result *crawler.ScrapeResult) error
+	CloseSpider(nodeName, spiderName string) error
 }
 
 /*

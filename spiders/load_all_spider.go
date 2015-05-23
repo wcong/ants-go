@@ -14,5 +14,7 @@ func LoadAllSpiders() map[string]*spiders.Spider {
 	spiderMap[zhihuSpider.Name] = zhihuSpider
 	muiltiplySpiders := MakeMuiltiplySpiders()
 	spiderMap[muiltiplySpiders.Name] = muiltiplySpiders
+	stockSpider := MakeStockSpider()
+	spiderMap[stockSpider.Name] = stockSpider
 	return spiderMap
 }

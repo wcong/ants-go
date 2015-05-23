@@ -46,3 +46,13 @@ type StopRequest struct {
 type StopResponse struct {
 	RpcBase
 }
+
+type CloseSpiderRequest struct {
+	RpcBase
+	SpiderName string
+}
+
+type CloseSpiderResponse struct {
+	RpcBase
+	SpiderName string
+}

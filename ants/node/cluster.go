@@ -5,6 +5,7 @@ import (
 	"github.com/wcong/ants-go/ants/crawler"
 	"github.com/wcong/ants-go/ants/http"
 	"github.com/wcong/ants-go/ants/util"
+	"log"
 	"sync"
 )
 
@@ -141,11 +142,17 @@ func (this *Cluster) Crawled(scrapyResult *crawler.ScrapeResult) {
 	this.RequestStatus.Crawled(scrapyResult)
 	// change  crawlStatus
 	this.crawlStatus.Crawled(scrapyResult.Request.SpiderName)
-	if this.crawlStatus.CanWeStop(scrapyResult.Request.SpiderName) {
-		spiderStatus := this.crawlStatus.CloseSpider(scrapyResult.Request.SpiderName)
-		message, _ := json.Marshal(spiderStatus)
-		util.DumpResult(this.settings.LogPath, spiderStatus.Name, string(message))
-	}
+}
+
+func (this *Cluster) CanWeStopSpider(spiderName string) bool {
+	return this.crawlStatus.CanWeStop(spiderName)
+}
+
+func (this *Cluster) StopSpider(spiderName string) {
+	spiderStatus := this.crawlStatus.CloseSpider(spiderName)
+	message, _ := json.Marshal(spiderStatus)
+	log.Println("dump", spiderName, "result")
+	util.DumpResult(this.settings.LogPath, spiderStatus.Name, string(message))
 }
 
 // add a request to quene

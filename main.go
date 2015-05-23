@@ -54,6 +54,8 @@ func initCluster(settings *util.Settings, rpcClient action.RpcClientAnts, node *
 				isClusterExist = true
 			}
 		}
+	} else {
+
 	}
 	if !isClusterExist {
 		node.MakeMasterNode(node.NodeInfo.Name)

@@ -153,3 +153,15 @@ func (this *RpcClient) ReportResult(nodeName string, result *crawler.ScrapeResul
 	}
 	return err
 }
+
+func (this RpcClient) CloseSpider(nodeName, spiderName string) error {
+	closeRequest := &action.CloseSpiderRequest{}
+	closeRequest.NodeInfo = this.node.NodeInfo
+	closeRequest.SpiderName = spiderName
+	closeResponse := &action.CloseSpiderResponse{}
+	err := this.connMap[nodeName].Call("RpcServer.CloseSpider", closeRequest, closeResponse)
+	if err != nil {
+		log.Panicln(err)
+	}
+	return err
+}

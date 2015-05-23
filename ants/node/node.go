@@ -4,6 +4,7 @@ import (
 	"github.com/wcong/ants-go/ants/crawler"
 	"github.com/wcong/ants-go/ants/http"
 	"github.com/wcong/ants-go/ants/util"
+	"log"
 	"strconv"
 )
 
@@ -64,8 +65,16 @@ func (this *Node) StartSpider(spiderName string) (bool, string) {
 	for _, request := range startRequest {
 		this.Cluster.AddRequest(request)
 	}
+	log.Println("start spider", spiderName)
+	this.Crawler.StartSpider(spiderName)
 	this.Crawler.Start()
 	return true, "started"
+}
+
+func (this *Node) CloseSpider(spiderName string) {
+	log.Println("close spider", spiderName)
+	this.Crawler.CloseSpider(spiderName)
+	this.Cluster.StopSpider(spiderName)
 }
 
 // get distribute request
@@ -114,6 +123,10 @@ func (this *Node) AcceptResult(scrapyResult *crawler.ScrapeResult) {
 	this.Cluster.Crawled(scrapyResult)
 }
 
+func (this *Node) CanWeStopSpider(spiderName string) bool {
+	return this.Cluster.CanWeStopSpider(spiderName)
+}
+
 // if there is none request left ,return true
 func (this *Node) IsStop() bool {
 	return this.Cluster.IsStop()
@@ -126,7 +139,7 @@ func (this *Node) GetAllNode() []*NodeInfo {
 
 // stop all crawl job
 func (this *Node) StopCrawl() {
-	this.Crawler.StopSpider()
+	this.Crawler.Stop()
 }
 
 // get master name of cluster

@@ -33,6 +33,20 @@ func (this *Crawler) GetStartRequest(spiderName string) []*http.Request {
 	return startRequests
 }
 
+func (this *Crawler) StartSpider(spiderName string) {
+	beforeMethod := this.SpiderMap[spiderName].BeforeMethod
+	if beforeMethod != nil {
+		beforeMethod()
+	}
+}
+
+func (this *Crawler) CloseSpider(spiderName string) {
+	afterMethod := this.SpiderMap[spiderName].AfterMethod
+	if afterMethod != nil {
+		afterMethod()
+	}
+}
+
 func (this *Crawler) Start() {
 	go this.Downloader.Start()
 	go this.Scraper.Start()
@@ -48,7 +62,7 @@ func (this *Crawler) UnPause() {
 	this.Scraper.UnPause()
 }
 
-func (this *Crawler) StopSpider() {
+func (this *Crawler) Stop() {
 	this.Downloader.Stop()
 	this.Scraper.Stop()
 }
