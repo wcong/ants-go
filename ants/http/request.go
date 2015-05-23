@@ -25,6 +25,7 @@ type Request struct {
 	NodeName   string
 	Depth      int
 	Proxy      string // proxy settings,just setting the proxy,downloader will take care of rest thing
+	Retry      int    // fail and retry time
 }
 
 func NewRequest(method, url, spiderName, parserName string, body io.Reader, cookieJar int) (*Request, error) {
@@ -38,6 +39,7 @@ func NewRequest(method, url, spiderName, parserName string, body io.Reader, cook
 		SpiderName: spiderName,
 		ParserName: parserName,
 		Depth:      0,
+		Retry:      0,
 	}
 	request.makeUniqueName()
 	return request, err

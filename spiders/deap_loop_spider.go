@@ -4,6 +4,7 @@ import (
 	"github.com/PuerkitoBio/goquery"
 	"github.com/wcong/ants-go/ants/http"
 	"github.com/wcong/ants-go/ants/spiders"
+	"strings"
 )
 
 func MakeDeadLoopSpider() *spiders.Spider {
@@ -12,7 +13,7 @@ func MakeDeadLoopSpider() *spiders.Spider {
 	spider.StartUrls = []string{"http://www.baidu.com/s?wd=1"}
 	spider.ParseMap = make(map[string]func(response *http.Response) ([]*http.Request, error))
 	spider.ParseMap[spiders.BASE_PARSE_NAME] = func(response *http.Response) ([]*http.Request, error) {
-		doc, err := goquery.NewDocumentFromReader(response.GoResponse.Body)
+		doc, err := goquery.NewDocumentFromReader(strings.NewReader(response.Body))
 		if err != nil {
 			return nil, err
 		}

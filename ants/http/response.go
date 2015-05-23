@@ -1,6 +1,8 @@
 package http
 
 import (
+	"io/ioutil"
+	"log"
 	Http "net/http"
 )
 
@@ -15,8 +17,20 @@ type Response struct {
 	SpiderName string
 	ParserName string
 	NodeName   string
+	Body       string
 }
 
 func NewResponse(response *Http.Response, request *Request, spiderName, parserName, nodeName string) *Response {
-	return &Response{response, request, spiderName, parserName, nodeName}
+	var body []byte
+	var err error
+	if response != nil {
+		body, err = ioutil.ReadAll(response.Body)
+		if err != nil {
+			log.Println(err)
+		}
+		response.Body.Close()
+	} else {
+		body = make([]byte, 0, 0)
+	}
+	return &Response{response, request, spiderName, parserName, nodeName, string(body)}
 }

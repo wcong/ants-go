@@ -4,6 +4,7 @@ import (
 	"github.com/PuerkitoBio/goquery"
 	"github.com/wcong/ants-go/ants/http"
 	"github.com/wcong/ants-go/ants/spiders"
+	"strings"
 )
 
 func MakeDumpTestSpider() *spiders.Spider {
@@ -15,7 +16,7 @@ func MakeDumpTestSpider() *spiders.Spider {
 		if response.Request.Depth > 10 {
 			return nil, nil
 		}
-		doc, err := goquery.NewDocumentFromReader(response.GoResponse.Body)
+		doc, err := goquery.NewDocumentFromReader(strings.NewReader(response.Body))
 		if err != nil {
 			return nil, err
 		}

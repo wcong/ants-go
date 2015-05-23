@@ -105,6 +105,14 @@ func (this *Downloader) downloadAndPush(request *http.Request) {
 	response, err := client.GoClient.Do(request.GoRequest)
 	if err != nil {
 		log.Println(err)
+		if request.Retry < 3 {
+			log.Println(request.SpiderName, "error time", request.Retry, "return to quene:", request.GoRequest.URL.String())
+			request.Retry += 1
+			this.RequestQuene.Push(request)
+			return
+		} else {
+			log.Println(request.SpiderName, "error time", request.Retry, "drop:", request.GoRequest.URL.String())
+		}
 	}
 	client.ClearProxy()
 	Response := http.NewResponse(response, request, request.SpiderName, request.ParserName, request.NodeName)

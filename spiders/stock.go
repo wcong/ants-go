@@ -5,7 +5,6 @@ import (
 	"github.com/wcong/ants-go/ants/db"
 	"github.com/wcong/ants-go/ants/http"
 	"github.com/wcong/ants-go/ants/spiders"
-	"io/ioutil"
 	"log"
 	"math"
 	"strconv"
@@ -35,15 +34,11 @@ func MakeStockSpider() *spiders.Spider {
 	spider.StartUrls = []string{urlPrefix + "0" + urlSuffix}
 	spider.ParseMap = make(map[string]func(response *http.Response) ([]*http.Request, error))
 	spider.ParseMap[spiders.BASE_PARSE_NAME] = func(response *http.Response) ([]*http.Request, error) {
-		bodyByte, err := ioutil.ReadAll(response.GoResponse.Body)
-		if err != nil {
-			log.Println(err)
-		}
-		body := string(bodyByte)
+		body := response.Body
 		startIndex := strings.Index(body, "FDC_DC.theTableData")
 		jsonString := body[startIndex+len("FDC_DC.theTableData(") : len(body)-2]
 		var jsonResult []Stock
-		err = json.Unmarshal([]byte(jsonString), &jsonResult)
+		err := json.Unmarshal([]byte(jsonString), &jsonResult)
 		if err != nil {
 			log.Println(err)
 		}

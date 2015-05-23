@@ -12,7 +12,7 @@ import (
 
 func Base(response *http.Response) ([]*http.Request, error) {
 	requestList := make([]*http.Request, 0)
-	doc, err := goquery.NewDocumentFromReader(response.GoResponse.Body)
+	doc, err := goquery.NewDocumentFromReader(strings.NewReader(response.Body))
 	if err != nil {
 		return requestList, err
 	}
