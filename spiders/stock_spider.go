@@ -71,7 +71,7 @@ func MakeStockSpider() *spiders.Spider {
 			}
 			return requestList, nil
 		}
-		return make([]*http.Request, 0), nil
+		return nil, nil
 	}
 	return &spider
 }

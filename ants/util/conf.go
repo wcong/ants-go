@@ -26,7 +26,7 @@ func NewSettings() *Settings {
 		NodeList:         []string{"127.0.0.1:8300"},
 		TcpPort:          8300,
 		LogPath:          "../log",
-		DownloadInterval: 0,
+		DownloadInterval: 1,
 	}
 }
 

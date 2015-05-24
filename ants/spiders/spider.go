@@ -20,14 +20,19 @@ what a spider do
 * 	define basic parse func
 */
 type Spider struct {
-	BeforeMethod func()
-	AfterMethod  func()
-	Name         string
-	StartUrls    []string
-	ParseMap     map[string]func(response *http.Response) ([]*http.Request, error) // defined you own parse function to scrapy response,make sure it return []response
+	BeforeMethod  func()
+	InitStartUrls func()
+	AfterMethod   func()
+	Name          string
+	StartUrls     []string
+	ExtData       map[string]interface{}
+	ParseMap      map[string]func(response *http.Response) ([]*http.Request, error) // defined you own parse function to scrapy response,make sure it return []response
 }
 
 func (this *Spider) MakeStartRequests() []*http.Request {
+	if this.InitStartUrls != nil {
+		this.InitStartUrls()
+	}
 	startRequestSlice := make([]*http.Request, len(this.StartUrls))
 	for index, url := range this.StartUrls {
 		request, err := http.NewRequest("GET", url, this.Name, BASE_PARSE_NAME, nil, 0)

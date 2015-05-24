@@ -60,13 +60,13 @@ func (this *Node) StartSpider(spiderName string) (bool, string) {
 	if this.Cluster.IsSpiderRunning(spiderName) {
 		return false, "spider is running"
 	}
+	log.Println("start spider", spiderName)
 	this.Cluster.StartSpider(spiderName)
+	this.Crawler.StartSpider(spiderName)
 	startRequest := this.Crawler.GetStartRequest(spiderName)
 	for _, request := range startRequest {
 		this.Cluster.AddRequest(request)
 	}
-	log.Println("start spider", spiderName)
-	this.Crawler.StartSpider(spiderName)
 	this.Crawler.Start()
 	return true, "started"
 }
