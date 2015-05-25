@@ -47,6 +47,20 @@ func MakeStockPriceSpider() *spiders.Spider {
 				existMap[strconv.Itoa(id)+":"+date] = true
 			}
 		}
+		maxDateRow, maxErr := db.DefaultMysqlConnectMap.Query(spider.Name, "select max(date),stock_id from db_stock_price group by stock_id")
+		if maxErr != nil {
+			log.Println(err)
+		} else {
+			defer maxDateRow.Close()
+			maxDataMap := make(map[int]string)
+			spider.ExtData["maxDataMap"] = maxDataMap
+			for maxDateRow.Next() {
+				var maxDate string
+				var stockId int
+				maxDateRow.Scan(&maxDate, &stockId)
+				maxDataMap[stockId] = maxDate
+			}
+		}
 	}
 	spider.AfterMethod = func() {
 		db.DefaultMysqlConnectMap.CloseContection(spider.Name)
@@ -69,12 +83,10 @@ func MakeStockPriceSpider() *spiders.Spider {
 				return
 			}
 			priceString := strings.TrimSpace(selection.Find("td:nth-child(3) div").Text())
-			log.Println(priceString)
 			priceFloat, _ := strconv.ParseFloat(priceString, 32)
 			price := int(priceFloat * 1000)
 			id := (spider.ExtData["codeIdMap"]).(map[string]int)[code]
 			_, ok := (spider.ExtData["existMap"]).(map[string]bool)[strconv.Itoa(id)+":"+date]
-			log.Println(date, id, price, ok)
 			if !ok {
 				_, err := db.DefaultMysqlConnectMap.Exec(spider.Name, "insert into db_stock_price(gmt_create,creator,stock_id,date,price)values(now(),'go', ? , ? , ? )", id, date, price)
 				if err != nil {
@@ -91,13 +103,36 @@ func MakeStockPriceSpider() *spiders.Spider {
 		month := today.Month()
 		jidu := int(math.Ceil(float64(month) / float64(3)))
 		codeIdMap := (spider.ExtData["codeIdMap"]).(map[string]int)
-		for code, _ := range codeIdMap {
-			var i int = 1
-			for ; i < jidu; i++ {
-				spider.StartUrls = append(spider.StartUrls, urlPrefix+code+".phtml?year="+strconv.Itoa(year)+"&jidu="+strconv.Itoa(i))
+		maxDataMap := (spider.ExtData["maxDataMap"]).(map[int]string)
+		for code, id := range codeIdMap {
+			stringData, ok := maxDataMap[id]
+			var maxYear int
+			var maxJidu int
+			if ok {
+				maxDate, _ := time.Parse("2006-01-02", stringData)
+				maxYear = maxDate.Year()
+				maxMonth := maxDate.Month()
+				maxJidu = int(math.Ceil(float64(maxMonth) / float64(3)))
+			} else {
+				maxYear = year
+				maxJidu = jidu
 			}
-			for ; i < 5; i++ {
-				spider.StartUrls = append(spider.StartUrls, urlPrefix+code+".phtml?year="+strconv.Itoa(year-1)+"&jidu="+strconv.Itoa(i))
+			var i int = 1
+			if maxYear >= year {
+				i = maxJidu
+				for ; i <= jidu; i++ {
+					spider.StartUrls = append(spider.StartUrls, urlPrefix+code+".phtml?year="+strconv.Itoa(year)+"&jidu="+strconv.Itoa(i))
+				}
+			} else {
+				for ; i <= jidu; i++ {
+					spider.StartUrls = append(spider.StartUrls, urlPrefix+code+".phtml?year="+strconv.Itoa(year)+"&jidu="+strconv.Itoa(i))
+				}
+				if i < maxJidu {
+					i = maxJidu
+				}
+				for ; i < 5; i++ {
+					spider.StartUrls = append(spider.StartUrls, urlPrefix+code+".phtml?year="+strconv.Itoa(year-1)+"&jidu="+strconv.Itoa(i))
+				}
 			}
 		}
 	}
