@@ -1,7 +1,11 @@
 ### ants-go
 
-[![Join the chat at https://gitter.im/wcong/ants-go](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/wcong/ants-go?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 open source, restful, distributed crawler engine
+
+### gitter
+
+[![Join the chat at https://gitter.im/wcong/ants-go](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/wcong/ants-go?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
 ### comming up
 
 * Persistence
