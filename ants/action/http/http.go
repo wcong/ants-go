@@ -3,25 +3,28 @@ package http
 import (
 	"encoding/json"
 	"github.com/wcong/ants-go/ants/action"
+	"github.com/wcong/ants-go/ants/cluster"
 	Http "github.com/wcong/ants-go/ants/http"
-	Node "github.com/wcong/ants-go/ants/node"
+	"github.com/wcong/ants-go/ants/node"
 	"log"
 	"net/http"
 	"time"
 )
 
 type Router struct {
-	node        *Node.Node
+	node        node.Node
+	cluster     cluster.Cluster
 	mux         map[string]func(http.ResponseWriter, *http.Request)
 	reporter    action.Watcher
 	distributer action.Watcher
 	rpcClient   action.RpcClientAnts
 }
 
-func NewRouter(node *Node.Node, reporter, distributer action.Watcher, rpcClient action.RpcClientAnts) *Router {
+func NewRouter(node node.Node, cluster cluster.Cluster, reporter, distributer action.Watcher, rpcClient action.RpcClientAnts) *Router {
 	mux := make(map[string]func(http.ResponseWriter, *http.Request))
 	router := &Router{
 		node:        node,
+		cluster:     cluster,
 		mux:         mux,
 		reporter:    reporter,
 		distributer: distributer,
@@ -39,7 +42,7 @@ func NewRouter(node *Node.Node, reporter, distributer action.Watcher, rpcClient 
 func (this *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	url := r.URL.String()
 	log.Println("get request:" + url)
-	if !this.node.Cluster.IsReady() {
+	if !this.cluster.IsReady() {
 		w.Write([]byte("sorry,cluster not ready,please wait"))
 		return
 	}
@@ -66,10 +69,7 @@ func (this *Router) Welcome(w http.ResponseWriter, r *http.Request) {
 	w.Write(encoder)
 }
 func (this *Router) Spiders(w http.ResponseWriter, r *http.Request) {
-	spiderList := make([]string, 0, len(this.node.Crawler.SpiderMap))
-	for spider := range this.node.Crawler.SpiderMap {
-		spiderList = append(spiderList, spider)
-	}
+	spiderList := this.node.GetSpidersName()
 	encoder, err := json.Marshal(spiderList)
 	if err != nil {
 		log.Println(err)
@@ -89,7 +89,7 @@ func (this *Router) Crawl(w http.ResponseWriter, r *http.Request) {
 	result, message := this.node.StartSpider(spiderName)
 	if result {
 		log.Println("start spider:", spiderName)
-		for _, nodeInfo := range this.node.GetAllNode() {
+		for _, nodeInfo := range this.cluster.GetAllNode() {
 			if !this.node.IsMe(nodeInfo.Name) {
 				this.rpcClient.StartSpider(nodeInfo.Name, spiderName)
 			}
@@ -109,7 +109,7 @@ func (this *Router) Crawl(w http.ResponseWriter, r *http.Request) {
 }
 
 func (this *Router) Cluster(w http.ResponseWriter, r *http.Request) {
-	encoder, err := json.Marshal(this.node.Cluster)
+	encoder, err := json.Marshal(this.cluster.GetClusterInfo())
 	if err != nil {
 		log.Println(err)
 	}
@@ -117,7 +117,7 @@ func (this *Router) Cluster(w http.ResponseWriter, r *http.Request) {
 }
 
 func (this *Router) CrawlCluster(w http.ResponseWriter, r *http.Request) {
-	encoder, err := json.Marshal(this.node.Cluster.RequestStatus)
+	encoder, err := json.Marshal(this.cluster.GetRequestStatus())
 	if err != nil {
 		log.Println(err)
 	}
@@ -125,7 +125,7 @@ func (this *Router) CrawlCluster(w http.ResponseWriter, r *http.Request) {
 }
 
 func (this *Router) CrawlNode(w http.ResponseWriter, r *http.Request) {
-	encoder, err := json.Marshal(this.node.Cluster.CrawlStatus())
+	encoder, err := json.Marshal(this.cluster.CrawlStatus())
 	if err != nil {
 		log.Println(err)
 	}

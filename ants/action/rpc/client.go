@@ -2,6 +2,7 @@ package rpc
 
 import (
 	"github.com/wcong/ants-go/ants/action"
+	"github.com/wcong/ants-go/ants/cluster"
 	"github.com/wcong/ants-go/ants/crawler"
 	"github.com/wcong/ants-go/ants/http"
 	"github.com/wcong/ants-go/ants/node"
@@ -13,13 +14,14 @@ import (
 )
 
 type RpcClient struct {
-	node    *node.Node
+	node    node.Node
+	cluster cluster.Cluster
 	connMap map[string]*rpc.Client
 }
 
-func NewRpcClient(node *node.Node) *RpcClient {
+func NewRpcClient(node node.Node, cluster cluster.Cluster) *RpcClient {
 	connMap := make(map[string]*rpc.Client)
-	return &RpcClient{node, connMap}
+	return &RpcClient{node, cluster, connMap}
 }
 
 // start a rpc client
@@ -41,13 +43,13 @@ func (this *RpcClient) LetMeIn(ip string, port int) error {
 		return err
 	}
 	request := new(action.LeftMeInRequest)
-	request.NodeInfo = this.node.NodeInfo
+	request.NodeInfo = this.node.GetNodeInfo()
 	response := new(action.LeftMeInResponse)
 	err = client.Call("RpcServer.LetMeIn", request, response)
 	if response.Result {
 		this.connMap[response.NodeInfo.Name] = client
-		this.node.AddNodeToCluster(response.NodeInfo)
-		this.node.Cluster.MakeMasterNode(response.NodeInfo.Name)
+		this.cluster.AddNode(response.NodeInfo)
+		this.cluster.MakeMasterNode(response.NodeInfo.Name)
 	} else {
 		client.Close()
 		this.LetMeIn(response.NodeInfo.Ip, response.NodeInfo.Port)
@@ -74,7 +76,7 @@ func (this *RpcClient) Detect() {
 			log.Println("node:", key, "is dead ,so remove it")
 			delete(this.connMap, key)
 			if this.node.IsMasterNode() {
-				this.node.DeleteDeadNode(key)
+				this.cluster.DeleteDeadNode(key)
 			}
 		}
 	}
@@ -95,7 +97,7 @@ func (this *RpcClient) Connect(ip string, port int) error {
 	err = client.Call("RpcServer.Connect", request, response)
 	if err == nil {
 		this.connMap[response.NodeInfo.Name] = client
-		this.node.AddNodeToCluster(response.NodeInfo)
+		this.cluster.AddNode(response.NodeInfo)
 	}
 	return err
 }
@@ -103,7 +105,7 @@ func (this *RpcClient) Connect(ip string, port int) error {
 // top node
 func (this *RpcClient) StopNode(nodeName string) error {
 	stopRequest := &action.StopRequest{}
-	stopRequest.NodeInfo = this.node.NodeInfo
+	stopRequest.NodeInfo = this.node.GetNodeInfo()
 	stopResponse := &action.StopResponse{}
 	err := this.connMap[nodeName].Call("RpcServer.StopNode", stopRequest, stopResponse)
 	if err != nil {
@@ -117,7 +119,7 @@ func (this *RpcClient) StopNode(nodeName string) error {
 **/
 func (this *RpcClient) Distribute(nodeName string, request *http.Request) error {
 	distributeRequest := &action.DistributeRequest{}
-	distributeRequest.NodeInfo = this.node.NodeInfo
+	distributeRequest.NodeInfo = this.node.GetNodeInfo()
 	distributeRequest.Request = request
 	distributeReqponse := &action.DistributeReqponse{}
 	err := this.connMap[nodeName].Call("RpcServer.AcceptRequest", distributeRequest, distributeReqponse)
@@ -131,7 +133,7 @@ func (this *RpcClient) Distribute(nodeName string, request *http.Request) error 
 
 func (this *RpcClient) StartSpider(nodeName, spiderName string) error {
 	startRequest := &action.RpcBase{
-		NodeInfo: this.node.NodeInfo,
+		NodeInfo: this.node.GetNodeInfo(),
 	}
 	startResponse := &action.RpcBase{}
 	err := this.connMap[nodeName].Call("RpcServer.StartSpider", startRequest, startResponse)
@@ -144,7 +146,7 @@ func (this *RpcClient) StartSpider(nodeName, spiderName string) error {
 // for slave send crawl result to master
 func (this *RpcClient) ReportResult(nodeName string, result *crawler.ScrapeResult) error {
 	reportRequest := &action.ReportRequest{}
-	reportRequest.NodeInfo = this.node.NodeInfo
+	reportRequest.NodeInfo = this.node.GetNodeInfo()
 	reportRequest.ScrapeResult = result
 	reportResponse := &action.ReportResponse{}
 	err := this.connMap[nodeName].Call("RpcServer.AcceptResult", reportRequest, reportResponse)
@@ -156,7 +158,7 @@ func (this *RpcClient) ReportResult(nodeName string, result *crawler.ScrapeResul
 
 func (this RpcClient) CloseSpider(nodeName, spiderName string) error {
 	closeRequest := &action.CloseSpiderRequest{}
-	closeRequest.NodeInfo = this.node.NodeInfo
+	closeRequest.NodeInfo = this.node.GetNodeInfo()
 	closeRequest.SpiderName = spiderName
 	closeResponse := &action.CloseSpiderResponse{}
 	err := this.connMap[nodeName].Call("RpcServer.CloseSpider", closeRequest, closeResponse)

@@ -2,6 +2,7 @@ package watcher
 
 import (
 	"github.com/wcong/ants-go/ants/action"
+	"github.com/wcong/ants-go/ants/cluster"
 	"github.com/wcong/ants-go/ants/http"
 	"github.com/wcong/ants-go/ants/node"
 	"log"
@@ -23,14 +24,14 @@ const (
 
 type Distributer struct {
 	Status    int
-	Cluster   *node.Cluster
-	Node      *node.Node
+	Cluster   cluster.Cluster
+	Node      node.Node
 	LastIndex int
 	RpcClient action.RpcClientAnts
 }
 
-func NewDistributer(node *node.Node, rpcClient action.RpcClientAnts) *Distributer {
-	return &Distributer{DISTRIBUTE_STOPED, node.Cluster, node, 0, rpcClient}
+func NewDistributer(node node.Node, cluster cluster.Cluster, rpcClient action.RpcClientAnts) *Distributer {
+	return &Distributer{DISTRIBUTE_STOPED, cluster, node, 0, rpcClient}
 }
 
 func (this *Distributer) IsStop() bool {
@@ -103,10 +104,11 @@ func (this *Distributer) Distribute(request *http.Request) {
 	if request.CookieJar > 0 {
 		return
 	} else {
-		if this.LastIndex >= len(this.Cluster.ClusterInfo.NodeList) {
+		nodeList := this.Cluster.GetAllNode()
+		if this.LastIndex >= len(nodeList) {
 			this.LastIndex = 0
 		}
-		nodeName := this.Cluster.ClusterInfo.NodeList[this.LastIndex].Name
+		nodeName := nodeList[this.LastIndex].Name
 		request.NodeName = nodeName
 		this.LastIndex += 1
 	}

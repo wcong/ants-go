@@ -2,6 +2,7 @@ package watcher
 
 import (
 	"github.com/wcong/ants-go/ants/action"
+	"github.com/wcong/ants-go/ants/cluster"
 	"github.com/wcong/ants-go/ants/crawler"
 	"github.com/wcong/ants-go/ants/node"
 	"log"
@@ -24,13 +25,14 @@ const (
 type Reporter struct {
 	Status      int
 	ResultQuene *crawler.ResultQuene
-	Node        *node.Node
+	Node        node.Node
+	cluster     cluster.Cluster
 	rpcClient   action.RpcClientAnts
 	distributer action.Watcher
 }
 
-func NewReporter(node *node.Node, rpcClient action.RpcClientAnts, resultQuene *crawler.ResultQuene, distributer action.Watcher) *Reporter {
-	return &Reporter{REPORT_STATUS_STOPED, resultQuene, node, rpcClient, distributer}
+func NewReporter(node node.Node, cluster cluster.Cluster, rpcClient action.RpcClientAnts, resultQuene *crawler.ResultQuene, distributer action.Watcher) *Reporter {
+	return &Reporter{REPORT_STATUS_STOPED, resultQuene, node, cluster, rpcClient, distributer}
 }
 
 func (this *Reporter) Start() {
@@ -92,7 +94,7 @@ func (this *Reporter) Run() {
 			time.Sleep(1 * time.Second)
 			continue
 		}
-		nodeName := this.Node.NodeInfo.Name
+		nodeName := this.Node.GetNodeInfo().Name
 		if result.ScrapedRequests != nil {
 			for _, request := range result.ScrapedRequests {
 				request.NodeName = nodeName
@@ -103,7 +105,7 @@ func (this *Reporter) Run() {
 			this.Node.ReportToMaster(result)
 			this.JudgeAndStopNode(result)
 		} else {
-			this.rpcClient.ReportResult(this.Node.GetMasterName(), result)
+			this.rpcClient.ReportResult(this.cluster.GetMasterName(), result)
 		}
 	}
 	log.Println("stop reporter")
@@ -113,7 +115,7 @@ func (this *Reporter) Run() {
 func (this *Reporter) JudgeAndStopNode(result *crawler.ScrapeResult) {
 	spiderName := result.Request.SpiderName
 	if this.Node.CanWeStopSpider(spiderName) {
-		for _, nodeInfo := range this.Node.GetAllNode() {
+		for _, nodeInfo := range this.cluster.GetAllNode() {
 			if this.Node.IsMe(nodeInfo.Name) {
 				this.Node.CloseSpider(spiderName)
 			} else {
@@ -124,7 +126,7 @@ func (this *Reporter) JudgeAndStopNode(result *crawler.ScrapeResult) {
 	if !this.Node.IsStop() {
 		return
 	}
-	for _, nodeInfo := range this.Node.GetAllNode() {
+	for _, nodeInfo := range this.cluster.GetAllNode() {
 		if this.Node.IsMe(nodeInfo.Name) {
 			this.Node.StopCrawl()
 			this.Stop()

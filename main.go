@@ -6,9 +6,11 @@ import (
 	AHttp "github.com/wcong/ants-go/ants/action/http"
 	"github.com/wcong/ants-go/ants/action/rpc"
 	"github.com/wcong/ants-go/ants/action/watcher"
+	clusterSupport "github.com/wcong/ants-go/ants/cluster/support"
 	"github.com/wcong/ants-go/ants/crawler"
 	"github.com/wcong/ants-go/ants/http"
 	"github.com/wcong/ants-go/ants/node"
+	nodeSupport "github.com/wcong/ants-go/ants/node/support"
 	"github.com/wcong/ants-go/ants/util"
 	"log"
 	"os"
@@ -38,7 +40,7 @@ func MakeSettings() *util.Settings {
 
 // try to join the cluster,
 // if there is no cluster,make itself master
-func initCluster(settings *util.Settings, rpcClient action.RpcClientAnts, node *node.Node) {
+func initCluster(settings *util.Settings, rpcClient action.RpcClientAnts, node node.Node) {
 	node.Join()
 	isClusterExist := false
 	if len(settings.NodeList) > 0 {
@@ -46,7 +48,7 @@ func initCluster(settings *util.Settings, rpcClient action.RpcClientAnts, node *
 			nodeSettings := strings.Split(nodeInfo, ":")
 			ip := nodeSettings[0]
 			port, _ := strconv.Atoi(nodeSettings[1])
-			if ip == node.NodeInfo.Ip && port == node.NodeInfo.Port {
+			if ip == node.GetNodeInfo().Ip && port == node.GetNodeInfo().Port {
 				continue
 			}
 			err := rpcClient.LetMeIn(ip, port)
@@ -58,7 +60,7 @@ func initCluster(settings *util.Settings, rpcClient action.RpcClientAnts, node *
 
 	}
 	if !isClusterExist {
-		node.MakeMasterNode(node.NodeInfo.Name)
+		node.MakeMasterNode(node.GetNodeInfo().Name)
 	}
 	node.Ready()
 }
@@ -74,15 +76,18 @@ func main() {
 		return
 	}
 	resultQuene := crawler.NewResultQuene()
-	Node := node.NewNode(setting, resultQuene)
-	var rpcClient action.RpcClientAnts = rpc.NewRpcClient(Node)
-	var distributer action.Watcher = watcher.NewDistributer(Node, rpcClient)
-	var reporter action.Watcher = watcher.NewReporter(Node, rpcClient, resultQuene, distributer)
-	rpc.NewRpcServer(Node, setting.TcpPort, rpcClient, reporter, distributer)
-	router := AHttp.NewRouter(Node, reporter, distributer, rpcClient)
+	defaultNode := nodeSupport.NewDefaultNode(setting, resultQuene)
+	defaultCluster := clusterSupport.NewDefaultCluster(setting)
+	defaultNode.Init(defaultCluster)
+	defaultCluster.Init(defaultNode.GetNodeInfo())
+	var rpcClient action.RpcClientAnts = rpc.NewRpcClient(defaultNode, defaultCluster)
+	var distributer action.Watcher = watcher.NewDistributer(defaultNode, defaultCluster, rpcClient)
+	var reporter action.Watcher = watcher.NewReporter(defaultNode, defaultCluster, rpcClient, resultQuene, distributer)
+	rpc.NewRpcServer(defaultNode, defaultCluster, setting.TcpPort, rpcClient, reporter, distributer)
+	router := AHttp.NewRouter(defaultNode, defaultCluster, reporter, distributer, rpcClient)
 	httpServer := http.NewHttpServer(setting, router)
 	httpServer.Start(wg)
-	initCluster(setting, rpcClient, Node)
+	initCluster(setting, rpcClient, defaultNode)
 	rpcClient.Start()
 	wg.Wait()
 }

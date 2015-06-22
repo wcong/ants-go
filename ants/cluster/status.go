@@ -1,4 +1,4 @@
-package node
+package cluster
 
 import (
 	"github.com/wcong/ants-go/ants/crawler"

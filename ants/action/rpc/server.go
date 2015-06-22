@@ -2,6 +2,7 @@ package rpc
 
 import (
 	"github.com/wcong/ants-go/ants/action"
+	"github.com/wcong/ants-go/ants/cluster"
 	"github.com/wcong/ants-go/ants/node"
 	"log"
 	"net"
@@ -15,15 +16,16 @@ const (
 )
 
 type RpcServer struct {
-	node        *node.Node
+	node        node.Node
+	cluster     cluster.Cluster
 	port        int
 	rpcClient   action.RpcClientAnts
 	reporter    action.Watcher
 	distributer action.Watcher
 }
 
-func NewRpcServer(node *node.Node, port int, rpcClient action.RpcClientAnts, reporter, distributer action.Watcher) *RpcServer {
-	rpcServer := &RpcServer{node, port, rpcClient, reporter, distributer}
+func NewRpcServer(node node.Node, cluster cluster.Cluster, port int, rpcClient action.RpcClientAnts, reporter, distributer action.Watcher) *RpcServer {
+	rpcServer := &RpcServer{node, cluster, port, rpcClient, reporter, distributer}
 	rpcServer.start()
 	return rpcServer
 }
@@ -63,12 +65,12 @@ func (this *RpcServer) LetMeIn(request *action.LeftMeInRequest, response *action
 	if this.node.IsMasterNode() {
 		this.node.Join()
 		response.Result = true
-		response.NodeInfo = this.node.NodeInfo
+		response.NodeInfo = this.node.GetNodeInfo()
 		this.rpcClient.Connect(request.NodeInfo.Ip, request.NodeInfo.Port)
 		this.node.Ready()
 	} else {
 		response.Result = false
-		response.NodeInfo = this.node.Cluster.GetMasterNode()
+		response.NodeInfo = this.cluster.GetMasterNode()
 	}
 	return nil
 }
@@ -76,7 +78,7 @@ func (this *RpcServer) LetMeIn(request *action.LeftMeInRequest, response *action
 // just tell who i am
 func (this *RpcServer) Connect(request *action.RpcBase, response *action.RpcBase) error {
 	response.Result = true
-	response.NodeInfo = this.node.NodeInfo
+	response.NodeInfo = this.node.GetNodeInfo()
 	return nil
 }
 
@@ -107,7 +109,7 @@ func (this *RpcServer) AcceptResult(request *action.ReportRequest, response *act
 	this.node.AcceptResult(request.ScrapeResult)
 	spiderName := request.ScrapeResult.Request.SpiderName
 	if this.node.CanWeStopSpider(spiderName) {
-		for _, nodeInfo := range this.node.GetAllNode() {
+		for _, nodeInfo := range this.cluster.GetAllNode() {
 			if this.node.IsMe(nodeInfo.Name) {
 				this.node.CloseSpider(spiderName)
 			} else {
@@ -116,7 +118,7 @@ func (this *RpcServer) AcceptResult(request *action.ReportRequest, response *act
 		}
 	}
 	if this.node.IsStop() {
-		for _, nodeInfo := range this.node.GetAllNode() {
+		for _, nodeInfo := range this.cluster.GetAllNode() {
 			if this.node.IsMe(nodeInfo.Name) {
 				this.stopNode()
 			} else {
