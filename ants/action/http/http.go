@@ -82,25 +82,32 @@ func (this *Router) Spiders(w http.ResponseWriter, r *http.Request) {
 // *		tell other node start spider
 // *		start reporter and distribute in this node
 func (this *Router) Crawl(w http.ResponseWriter, r *http.Request) {
+
 	r.ParseForm()
 	spiderName := r.Form["spider"][0]
 	now := time.Now().Format("2006-01-02 15:04:05")
 	startResult := &StartSpiderResult{}
-	result, message := this.node.StartSpider(spiderName)
-	if result {
-		log.Println("start spider:", spiderName)
-		for _, nodeInfo := range this.cluster.GetAllNode() {
-			if !this.node.IsMe(nodeInfo.Name) {
-				this.rpcClient.StartSpider(nodeInfo.Name, spiderName)
-			}
-		}
-		go this.reporter.Start()
-		go this.distributer.Start()
-	}
 	startResult.Time = now
-	startResult.Success = result
 	startResult.Spider = spiderName
-	startResult.Message = message
+	startResult.MasterNode = this.cluster.GetMasterNode()
+	if !this.node.IsMasterNode() {
+		startResult.Success = false
+		startResult.Message = "not master,see master node"
+	} else {
+		result, message := this.node.StartSpider(spiderName)
+		if result {
+			log.Println("start spider:", spiderName)
+			for _, nodeInfo := range this.cluster.GetAllNode() {
+				if !this.node.IsMe(nodeInfo.Name) {
+					this.rpcClient.StartSpider(nodeInfo.Name, spiderName)
+				}
+			}
+			go this.reporter.Start()
+			go this.distributer.Start()
+		}
+		startResult.Success = result
+		startResult.Message = message
+	}
 	encoder, err := json.Marshal(startResult)
 	if err != nil {
 		log.Println(err)
